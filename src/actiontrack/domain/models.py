@@ -36,3 +36,263 @@ def parse_item_id(text: str) -> int:
             next_step="use the form AT-0012, at-12 or 12 (ids start at 1)",
         )
     return value
+
+
+# ===========================================================================
+# Parse-result model (T-M2-01, T-M2-16)
+# ===========================================================================
+#
+# Immutable, pure-Python value objects returned by the parsing layer. No I/O, no clock, no
+# randomness; every collection is a tuple. Codes are validated against ``codes.py`` (this module
+# defines no code list; it only adds the parse-time message templates keyed by code).
+#
+# Public API
+# ----------
+# ``ParseWarning(code, line, message, detail=None, file=None)``  warning code (W-*), 1-based line or
+#                       None; ``file`` is set by layers that have no enclosing ParsedFile (discovery)
+# ``FileFailure(code, message, byte_offset=None, size_bytes=None, os_reason=None, traceback=None)``
+#                       E-* code
+# ``Attendee(raw_name, email_hint=None)``
+# ``MeetingMeta(date, date_source, date_raw, title, attendees)``
+# ``TextSpan(start, end)``          half-open offsets into ``ParsedItem.description``
+# ``ParsedItem(...)``               see class docstring; ``owner_hook`` / ``due_hook`` stay None in M2
+# ``NonCheckboxCandidate(kind, line, text)``
+# ``ParsedFile(rel_path, status, failure, content_sha256, size_bytes, mtime_ns, meeting, items,
+#                candidates, warnings)`` plus ``to_dict()``
+# ``PARSE_MESSAGE_TEMPLATES``       code -> template (placeholders ``{file}`` + code-specific ones)
+# ``PARSER_EMITTED_CODES``          codes that must have a template
+# ``parse_message(code, file, line=None, **kw) -> str``
+# ``ingest_order_key(parsed_file) -> tuple``   persistence order (T-M2-16)
+
+import dataclasses  # noqa: E402
+import datetime as _dt  # noqa: E402
+
+from actiontrack import codes as _codes  # noqa: E402
+
+PARSE_STATUSES: frozenset[str] = frozenset({"ok", "empty", "failed"})
+DATE_SOURCES: frozenset[str] = frozenset({"front_matter", "date_line", "title", "filename", "none"})
+CHECKBOX_STATES: frozenset[str] = frozenset({"open", "done"})
+
+# Parse-time message templates. ``{file}`` is the location text ("rel/path.md" or
+# "rel/path.md:12"); each states what happened and what to do next (spec 11, last paragraph).
+_T = _codes
+PARSE_MESSAGE_TEMPLATES: dict[str, str] = {
+    _T.E_UNREADABLE: "{file}: cannot read file ({reason}). Next: check permissions or close the program locking it.",
+    _T.E_ENCODING: "{file}: not valid UTF-8 at byte {offset}; file skipped. Next: re-save the file as UTF-8.",
+    _T.E_BINARY: "{file}: contains binary data (NUL bytes or binary header); file skipped. Next: remove it from the notes folder or replace it with a text note.",
+    _T.E_TOO_LARGE: "{file}: file is {size} bytes, over the {limit}-byte limit; file skipped. Next: split the file or raise limits.max_file_bytes.",
+    _T.E_INTERNAL_PARSE: "{file}: unexpected internal error while parsing; the file's changes were rolled back. Next: re-run with --verbose and report the trace.",
+    _T.W_NO_FILES: "{file}: no .md files found. Next: check the folder path.",
+    _T.W_EMPTY_FILE: "{file}: file is empty; nothing to ingest. Next: add notes or delete the file.",
+    _T.W_NO_ITEMS: "{file}: no action items found. Next: add '- [ ] Owner to do something' lines if the meeting had actions.",
+    _T.W_SYMLINK_SKIPPED: "{file}: symbolic link skipped (links are never followed). Next: copy the real file into the notes folder.",
+    _T.W_FRONTMATTER_INVALID: "{file}: front matter is unclosed or unsupported; treated as absent. Next: close it with a '---' line.",
+    _T.W_FENCE_UNCLOSED: "{file}: code fence is never closed; the rest of the file is ignored. Next: add the closing fence.",
+    _T.W_MEETING_DATE_MISSING: "{file}: no meeting date found; relative due dates stay unresolved. Next: add a 'Date: YYYY-MM-DD' line.",
+    _T.W_MEETING_DATE_INVALID: "{file}: meeting date {value!r} is not a valid date; date left empty. Next: write it as YYYY-MM-DD.",
+    _T.W_MEETING_DATE_FROM_FILENAME: "{file}: meeting date {date} taken from the file name. Next: add a 'Date:' line to confirm it.",
+    _T.W_DATE_WEEKDAY_MISMATCH: "{file}: weekday does not match date {date}; date used as written. Next: fix the weekday or the date.",
+    _T.W_DATE_NOT_DUE: "{file}: phrase {phrase!r} is not a due date; kept as other date. Next: write 'due <date>' if it is one.",
+    _T.W_CHECKBOX_IGNORED_REGION: "{file}: checkbox inside an ignored region (code fence or comment); not imported. Next: move it out of the region.",
+    _T.W_DATE_CONFLICT: "{file}: meeting date sources disagree ({a} vs {b}); using {chosen}. Next: make the date fields agree.",
+    _T.W_ATTENDEES_MISSING: "{file}: no attendees listed. Next: add an 'Attendees:' line so owners can be resolved.",
+    _T.W_CHECKBOX_NOSPACE: "{file}: checkbox without a space after the bracket. Next: write '- [ ] text'.",
+    _T.W_CHECKBOX_NONSTANDARD: "{file}: non-standard checkbox marker. Next: use '[ ]' or '[x]'.",
+    _T.W_NONCHECKBOX_CANDIDATES: "{file}: possible action line is not a checkbox and was not imported. Next: turn it into '- [ ] ...' if it is an action.",
+    _T.W_DUE_BEFORE_MEETING: "{file}: due date {due} is before the meeting date {meeting}. Next: check the date.",
+    _T.W_LONG_LINE: "{file}: line is very long ({length} characters). Next: split it if it holds several actions.",
+    _T.W_HTML_COMMENT_UNCLOSED: "{file}: HTML comment is never closed; the rest of the file is ignored. Next: add '-->'.",
+    _T.W_CHECKBOX_EMPTY: "{file}: checkbox with no text; not imported. Next: add the task text.",
+    _T.W_DIR_UNREADABLE: "{file}: directory cannot be read ({reason}); skipped. Next: fix its permissions and re-run.",
+}
+
+#: Codes the parsers emit: all E-* plus W-* whose emitter is "parsers" (22 W + 5 E).
+PARSER_EMITTED_CODES: frozenset[str] = _codes.ERROR_CODES | frozenset(
+    c for c in _codes.WARNING_CODES if _codes.EMITTERS[c] == "parsers"
+)
+
+
+def parse_message(code: str, file: str, line: int | None = None, **kw: object) -> str:
+    """Render ``PARSE_MESSAGE_TEMPLATES[code]``; ``file`` gets ``:line`` appended when given.
+
+    Unknown placeholders are left as ``{key}`` rather than raising.
+    """
+    where = f"{file}:{line}" if line is not None else file
+
+    class _Keep(dict):
+        def __missing__(self, key: str) -> str:
+            return "{" + key + "}"
+
+    return PARSE_MESSAGE_TEMPLATES[code].format_map(_Keep(file=where, **kw))
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ParseWarning:
+    """A non-fatal parse finding. ``code`` must be a ``W-*`` code; ``line`` is 1-based or None."""
+
+    code: str
+    line: int | None
+    message: str
+    detail: str | None = None
+    file: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.code not in _codes.WARNING_CODES:
+            raise ValueError(f"not a warning code: {self.code!r}")
+
+    def to_dict(self) -> dict[str, object]:
+        return {"code": self.code, "line": self.line, "message": self.message, "detail": self.detail}
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class FileFailure:
+    """A whole-file failure. ``code`` must be an ``E-*`` code (exit 5 at end of run)."""
+
+    code: str
+    message: str
+    byte_offset: int | None = None
+    size_bytes: int | None = None
+    os_reason: str | None = None
+    traceback: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.code not in _codes.ERROR_CODES:
+            raise ValueError(f"not an error code: {self.code!r}")
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "code": self.code,
+            "message": self.message,
+            "byte_offset": self.byte_offset,
+            "size_bytes": self.size_bytes,
+            "os_reason": self.os_reason,
+        }
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class Attendee:
+    raw_name: str
+    email_hint: str | None = None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class MeetingMeta:
+    """``date`` is a ``datetime.date`` or None; ``date_source`` in DATE_SOURCES."""
+
+    date: _dt.date | None
+    date_source: str
+    date_raw: str | None
+    title: str | None
+    attendees: tuple[Attendee, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.date_source not in DATE_SOURCES:
+            raise ValueError(f"invalid date_source: {self.date_source!r}")
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class TextSpan:
+    """Half-open ``[start, end)`` character offsets into ``ParsedItem.description``."""
+
+    start: int
+    end: int
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ParsedItem:
+    """One checkbox action item.
+
+    ``raw_text`` is verbatim source text (never NFC-normalised); ``description`` the full cleaned
+    NFC text (owner/due phrases still present); ``task_text`` the derived display text.
+    ``owner_hook`` / ``due_hook`` are placeholders (None in M2) for M3/M4 types.
+    """
+
+    line_start: int
+    line_end: int
+    raw_text: str
+    description: str
+    task_text: str
+    checkbox_state: str
+    section_heading: str | None
+    occurrence_index: int
+    block_hash: str
+    owner_hook: object | None = None
+    due_hook: object | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "line_start": self.line_start,
+            "line_end": self.line_end,
+            "raw_text": self.raw_text,
+            "description": self.description,
+            "task_text": self.task_text,
+            "checkbox_state": self.checkbox_state,
+            "section_heading": self.section_heading,
+            "occurrence_index": self.occurrence_index,
+            "block_hash": self.block_hash,
+        }
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class NonCheckboxCandidate:
+    kind: str
+    line: int
+    text: str
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ParsedFile:
+    """Parse result of one file. ``status``: ``ok`` | ``empty`` | ``failed`` (then ``failure`` set)."""
+
+    rel_path: str
+    status: str
+    failure: FileFailure | None = None
+    content_sha256: str | None = None
+    size_bytes: int | None = None
+    mtime_ns: int | None = None
+    meeting: MeetingMeta | None = None
+    items: tuple[ParsedItem, ...] = ()
+    candidates: tuple[NonCheckboxCandidate, ...] = ()
+    warnings: tuple[ParseWarning, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.status not in PARSE_STATUSES:
+            raise ValueError(f"invalid status: {self.status!r}")
+        if (self.status == "failed") != (self.failure is not None):
+            raise ValueError("status 'failed' requires a failure, and only then")
+
+    def to_dict(self) -> dict[str, object]:
+        """Stable, JSON-serialisable form (fixed key order, ISO dates, warnings by (line, code))."""
+        meeting = None
+        if self.meeting is not None:
+            m = self.meeting
+            meeting = {
+                "date": m.date.isoformat() if m.date else None,
+                "date_source": m.date_source,
+                "date_raw": m.date_raw,
+                "title": m.title,
+                "attendees": [{"raw_name": a.raw_name, "email_hint": a.email_hint} for a in m.attendees],
+            }
+        warnings = sorted(self.warnings, key=lambda w: (w.line or 0, w.code))
+        return {
+            "rel_path": self.rel_path,
+            "status": self.status,
+            "failure": self.failure.to_dict() if self.failure else None,
+            "content_sha256": self.content_sha256,
+            "size_bytes": self.size_bytes,
+            "mtime_ns": self.mtime_ns,
+            "meeting": meeting,
+            "items": [i.to_dict() for i in self.items],
+            "candidates": [{"kind": c.kind, "line": c.line, "text": c.text} for c in self.candidates],
+            "warnings": [w.to_dict() for w in warnings],
+        }
+
+
+def ingest_order_key(parsed_file: ParsedFile) -> tuple[bool, _dt.date, str]:
+    """Persistence order: dated files by meeting date, then ordinal ``rel_path``; undated last.
+
+    ``(meeting_date is None, meeting_date, rel_path)`` with ``date.min`` standing in for None so
+    keys always compare. Failed/empty files carry no meeting and land in the null group.
+    """
+    meeting_date = parsed_file.meeting.date if parsed_file.meeting is not None else None
+    return (meeting_date is None, meeting_date or _dt.date.min, parsed_file.rel_path)

@@ -55,6 +55,12 @@ READ_ONLY_TREES = (
     REPO_ROOT / "notes" / "notes",
     FIXTURES_NOTES,
 )
+# Test-only override: the guard's own self-test (tests/unit/test_skeleton.py) runs a pytest subprocess
+# against a throw-away tree instead of the real read-only trees, so it can never disturb test runs
+# that are executing in parallel (several agents/terminals watch the real trees at the same time).
+_guard_override = os.environ.get("ACTIONTRACK_TEST_GUARD_ROOTS")
+if _guard_override:
+    READ_ONLY_TREES = tuple(Path(p) for p in _guard_override.split(os.pathsep) if p)
 
 _ID_PATTERNS = {"ac": re.compile(r"^AC-\d{2}\.\d+$"), "sc": re.compile(r"^SC-\d+$")}
 

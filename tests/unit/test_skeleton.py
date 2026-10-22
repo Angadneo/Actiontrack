@@ -84,23 +84,36 @@ def test_snapshot_detects_change(tmp_path):
     assert snapshot_tree(tmp_path) != s1
 
 
-def test_sample_guard_fails_a_writing_test():
-    """The guard must fail a test that writes into a read-only tree (run in a subprocess)."""
-    probe = FIXTURES_NOTES / "__guard_probe.md"
-    scratch = REPO_ROOT / "tests" / "unit" / "_guard_probe_test.py"
-    scratch.write_text(
+def test_sample_guard_fails_a_writing_test(tmp_path):
+    """The guard must fail a test that writes into a read-only tree (run in a subprocess).
+
+    Everything happens in a throw-away tree under tmp_path: the guarded root is redirected with
+    ACTIONTRACK_TEST_GUARD_ROOTS and the probe test lives outside the repo and loads this conftest
+    as a plugin, so no file is ever created in the real fixtures/tests folders (parallel runs safe).
+    """
+    guarded = tmp_path / "guarded"
+    guarded.mkdir()
+    (guarded / "a.md").write_text("original", encoding="utf-8")
+    probe = guarded / "__guard_probe.md"
+    probe_test = tmp_path / "probe" / "test_probe.py"
+    probe_test.parent.mkdir()
+    probe_test.write_text(
         f"import pathlib\n\ndef test_bad():\n    pathlib.Path(r'{probe}').write_text('x')\n",
         encoding="utf-8",
     )
-    try:
-        r = subprocess.run(
-            [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", str(scratch)],
-            capture_output=True,
-            text=True,
-            cwd=REPO_ROOT,
-        )
-    finally:
-        scratch.unlink(missing_ok=True)
-        probe.unlink(missing_ok=True)
-    assert r.returncode != 0
+    env = dict(os.environ)
+    env["ACTIONTRACK_TEST_GUARD_ROOTS"] = str(guarded)
+    env["PYTHONPATH"] = str(REPO_ROOT) + os.pathsep + str(REPO_ROOT / "src")
+    r = subprocess.run(
+        [
+            sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
+            "-p", "tests.conftest", "--rootdir", str(probe_test.parent), str(probe_test),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(tmp_path),
+        env=env,
+    )
+    assert r.returncode != 0, r.stdout + r.stderr
     assert "read-only sample/fixture tree" in r.stdout
+    assert "__guard_probe.md" in r.stdout
