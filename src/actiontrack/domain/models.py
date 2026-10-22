@@ -296,3 +296,141 @@ def ingest_order_key(parsed_file: ParsedFile) -> tuple[bool, _dt.date, str]:
     """
     meeting_date = parsed_file.meeting.date if parsed_file.meeting is not None else None
     return (meeting_date is None, meeting_date or _dt.date.min, parsed_file.rel_path)
+
+
+# ---------------------------------------------------------------------------------------------
+# Owner / person models (T-M4-02; spec 7.2 ItemOwner/Person, 10.1, 10.2a, 10.3)
+#
+# Public API appended for M4/M5 (all frozen, pure data):
+#   ``OwnerStatus``     StrEnum resolved|provisional|ambiguous|unassigned     (item_owner.owner_status)
+#   ``Provenance``      StrEnum roster|alias|attendee|attendee_in_meeting|unique_first_name|
+#                       initial_form|diacritic_fold|provisional|none          (item_owner.provenance)
+#   ``OwnerRole``       StrEnum owner|with                                     (item_owner.role)
+#   ``PersonOrigin``    StrEnum roster|attendee|note_owner                     (person.origin)
+#   ``NameForm(kind, first, last, initial, qualifier)``  kind: ``NameFormKind`` full|first_initial|
+#                       first_only. ``first``/``last``/``initial`` are ``name_key`` text (last is None
+#                       unless ``full``; initial is the single letter for ``first_initial`` and the
+#                       first letter of ``last`` for ``full``; None for ``first_only``).
+#   ``NameMention(raw, span, role=OwnerRole.OWNER)``  one name found in an owner clause; ``raw`` is the
+#                       text as written, ``span`` a ``TextSpan`` into ``ParsedItem.description``.
+#   ``OwnerPhrase(mentions, rule_id, clause_span, nonperson_raw=None, with_spans=())``
+#                       result of owner-phrase extraction (T-M4-03..04). ``rule_id`` is 1..3 (the rule
+#                       that located the clause), ``clause_span`` the whole owner clause (removed from
+#                       ``task_text``), ``nonperson_raw`` the preserved text of a non-person owner
+#                       such as ``Everyone`` (then ``mentions`` is empty and the owner is unassigned),
+#                       ``with_spans`` the spans of the ``(with Other)`` collaborator parts.
+#   ``ResolvedOwner(ordinal, owner_raw, person_id, status, candidates, provenance, role, warnings)``
+#                       one resolved item owner row; ``candidates`` a sorted tuple of person ids (only
+#                       for ``ambiguous``), ``warnings`` a tuple of W-* codes (str) the resolver wants
+#                       emitted (the caller adds file/line context).
+#   ``Person(id, first_name, last_name, identity_key, origin, verified=False, qualifier=None,
+#            display_name='', name_key='', email=None)``  mirrors the ``person`` table (``last_name``
+#                       None for a provisional single-token/initial-form person).
+# ---------------------------------------------------------------------------------------------
+import enum as _enum  # noqa: E402
+
+
+class OwnerStatus(_enum.StrEnum):
+    RESOLVED = "resolved"
+    PROVISIONAL = "provisional"
+    AMBIGUOUS = "ambiguous"
+    UNASSIGNED = "unassigned"
+
+
+class Provenance(_enum.StrEnum):
+    ROSTER = "roster"
+    ALIAS = "alias"
+    ATTENDEE = "attendee"
+    ATTENDEE_IN_MEETING = "attendee_in_meeting"
+    UNIQUE_FIRST_NAME = "unique_first_name"
+    INITIAL_FORM = "initial_form"
+    DIACRITIC_FOLD = "diacritic_fold"
+    PROVISIONAL = "provisional"
+    NONE = "none"
+
+
+class OwnerRole(_enum.StrEnum):
+    OWNER = "owner"
+    WITH = "with"
+
+
+class PersonOrigin(_enum.StrEnum):
+    ROSTER = "roster"
+    ATTENDEE = "attendee"
+    NOTE_OWNER = "note_owner"
+
+
+class NameFormKind(_enum.StrEnum):
+    FULL = "full"
+    FIRST_INITIAL = "first_initial"
+    FIRST_ONLY = "first_only"
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class NameForm:
+    """Shape of a written name (see ``names.classify_name``); keys are ``name_key`` text."""
+
+    kind: NameFormKind
+    first: str
+    last: str | None = None
+    initial: str | None = None
+    qualifier: str | None = None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class NameMention:
+    """One name inside an owner clause (``span`` is into ``ParsedItem.description``)."""
+
+    raw: str
+    span: TextSpan
+    role: OwnerRole = OwnerRole.OWNER
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class OwnerPhrase:
+    """Extracted owner clause (spec 10.1); ``mentions`` empty when ``nonperson_raw`` is set."""
+
+    mentions: tuple[NameMention, ...]
+    rule_id: int
+    clause_span: TextSpan
+    nonperson_raw: str | None = None
+    with_spans: tuple[TextSpan, ...] = ()
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ResolvedOwner:
+    """One resolved ItemOwner row (spec 7.2, 10.3)."""
+
+    ordinal: int
+    owner_raw: str | None
+    person_id: str | None
+    status: OwnerStatus
+    candidates: tuple[str, ...] = ()
+    provenance: Provenance = Provenance.NONE
+    role: OwnerRole = OwnerRole.OWNER
+    warnings: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        for code in self.warnings:
+            if code not in _codes.WARNING_CODES:
+                raise ValueError(f"not a warning code: {code!r}")
+        if self.status is OwnerStatus.AMBIGUOUS and self.person_id is not None:
+            raise ValueError("an ambiguous owner has no person_id")
+        if self.status in (OwnerStatus.RESOLVED, OwnerStatus.PROVISIONAL) and self.person_id is None:
+            raise ValueError(f"a {self.status.value} owner needs a person_id")
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class Person:
+    """Person record (spec 7.2); identity is ``identity_key`` (First+Last, spec 10.2a)."""
+
+    id: str
+    first_name: str
+    last_name: str | None
+    identity_key: str
+    origin: PersonOrigin
+    verified: bool = False
+    qualifier: str | None = None
+    display_name: str = ""
+    name_key: str = ""
+    email: str | None = None
