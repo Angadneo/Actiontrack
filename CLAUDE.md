@@ -9,7 +9,11 @@ clock + time zones, config + roster, UTF-8 I/O, table/JSON renderers, logging, S
 migrations + repo base, and the CLI shell (argparse, global options, help). The four real commands
 (`ingest`, `list`, `done`, `followup`) are still **stubs** registered in `cli.HANDLERS`: each exits 1 with
 "not implemented in this build" until its milestone replaces the entry; `gmail-login` is real only for the
-`handoff`/`fake` channels. Next is **M2 ∥ M3** (parsing core, date resolver). Before writing any
+`handoff`/`fake` channels. **M2 (parsing core) and M3 (date resolver) are also implemented and accepted**
+(1983 tests): `actiontrack.parsing.parse_document` is the pure per-file entry point (reader, markdown
+regions, checkboxes, meeting metadata, items, `task_text`, due resolution via `domain.dates.resolve_due`);
+owner extraction is NOT there yet (`owner_hook` is None, `task_text` still starts with the owner clause)
+and arrives in M4. Next is **M4** (people & owners), then **M5** (ingest service). Before writing any
 implementation code, read the relevant task file in `specs/tasks/` for the milestone you're working on —
 each task lists size, dependencies, spec references, files to touch, the tests to write first, and a
 done-when condition. Hand-off notes from M1 live in the docstring of `tests/integration/test_m1_exit.py`.
