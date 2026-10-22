@@ -1,0 +1,7 @@
+{
+  "_comment": "Hand-written table of non-normal line ranges (1-based, inclusive) per sample .md file; files not listed have none. Unlisted failures: scratch.md (binary), 2026-09-09-notes-final-v2.md (empty).",
+  "2026-09-16-standup.md": [["front_matter", 1, 5]],
+  "2026-09-30-standup.md": [["front_matter", 1, 5]],
+  "2026-09-21-incident-review.md": [["quote", 8, 9]],
+  "2026-10-09-security-review.md": [["fence", 8, 11], ["comment", 13, 13]]
+}
