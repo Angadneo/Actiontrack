@@ -1,0 +1,2573 @@
+[
+ {
+  "rel_path": "2026-09-01-quote-portal-kickoff.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "766c220da715fa97d9f9757899148bb006eb90cb74782e5ae63a2fa6f7207cfa",
+  "size_bytes": 575,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-01",
+   "date_source": "date_line",
+   "date_raw": "2026-09-01",
+   "title": "Quote portal kickoff",
+   "attendees": [
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Mehta",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Priya to send the revised quote to Acme by Friday",
+    "description": "Priya to send the revised quote to Acme by Friday",
+    "task_text": "Priya to send the revised quote to Acme",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "abfb35e0abbc99ca76c8b71d1d89178025cf5806fd05fcf1d3b2dab0947ccc89"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Rahul to set up the staging environment by 2026-09-08",
+    "description": "Rahul to set up the staging environment by 2026-09-08",
+    "task_text": "Rahul to set up the staging environment",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "ab82448b3c6ff07d19d34f5304ef9dfff337eb69c477004212df2f462d6b04c9"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Anita to share first wireframes by Thursday",
+    "description": "Anita to share first wireframes by Thursday",
+    "task_text": "Anita to share first wireframes",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "897c4fbf9a2d285d703c53fcd4a32c6106f6cc1a4a0f54ff9e0fed00a1587434"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Sam to confirm cloud budget with finance",
+    "description": "Sam to confirm cloud budget with finance",
+    "task_text": "Sam to confirm cloud budget with finance",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "52c2a9a483953bf18fc9c3cf4f4f94a473d3f86e841760a5cb3122dc012b76d0"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-02-standup.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "59c81667c8d6203900e8ee9450bdb4c1438c969a7a8603f05a6c2c12a9c5e6b2",
+  "size_bytes": 290,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-02",
+   "date_source": "date_line",
+   "date_raw": "2026-09-02",
+   "title": "Team standup",
+   "attendees": [
+    {
+     "raw_name": "Rahul Mehta",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Rahul to open the repo access request by tomorrow",
+    "description": "Rahul to open the repo access request by tomorrow",
+    "task_text": "Rahul to open the repo access request",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "f7879f418210ce7b9fa4ed0821d557c509394b47e54b8c44e06065d00ba411b8"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Sam to share the VPN guide",
+    "description": "Sam to share the VPN guide",
+    "task_text": "Sam to share the VPN guide",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "15e44f5e5903382054c5264286432b8fb0b7189bca50e73c6de065495cf983e6"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-03-billing-migration-sync.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "f6e1a935f8127032ceadd57caf950a8390277f372d45c77cf9e17776f1bee771",
+  "size_bytes": 544,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-03",
+   "date_source": "date_line",
+   "date_raw": "2026-09-03",
+   "title": "Billing migration sync",
+   "attendees": [
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Karan to export last quarter invoices by 10 Sep",
+    "description": "Karan to export last quarter invoices by 10 Sep",
+    "task_text": "Karan to export last quarter invoices",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "05856c7ea428c1bf9c38ad150205e85097af6e66ad1752a14ffc88b5b60f26dc"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Rahul to review the schema mapping doc by Monday",
+    "description": "Rahul to review the schema mapping doc by Monday",
+    "task_text": "Rahul to review the schema mapping doc",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "6d5d9467a056bf1461eea4710a67d1c588f736ef05f1cfe84650845597998c1c"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Priya to draft the test plan for invoice rounding by end of next week",
+    "description": "Priya to draft the test plan for invoice rounding by end of next week",
+    "task_text": "Priya to draft the test plan for invoice rounding",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "144a34cde4527ff047fc01b9896fd623a80c7ee2675a42f20a4e197cea11b6a8"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Sam to snapshot the production DB before cutover",
+    "description": "Sam to snapshot the production DB before cutover",
+    "task_text": "Sam to snapshot the production DB before cutover",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "825a8780a23ea1b8e932ddc943d418f737c8e0b4954abca3c4ee19f6d7b7d6f0"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-08-quote-portal-weekly.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "3d0d5f82ebb41a880bd0ead57eaed60f482416cbcecefca5f73776c2ea4da93f",
+  "size_bytes": 464,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-08",
+   "date_source": "date_line",
+   "date_raw": "2026-09-08",
+   "title": "Quote portal weekly",
+   "attendees": [
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Mehta",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Priya N. to send revised quote to Acme — by Friday",
+    "description": "Priya N. to send revised quote to Acme — by Friday",
+    "task_text": "Priya N. to send revised quote to Acme",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "6ffce82475333aeab31755f18b907d62c718aaa1975c9b3580ad3f11bb6530d0"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Rahul to finish login screen by Wed",
+    "description": "Rahul to finish login screen by Wed",
+    "task_text": "Rahul to finish login screen",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "4413828ed255cf826abe0049a7d1b1362fd56cf87f146e7a198d598fbf2180b2"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Meera to ask Acme for their procurement contact",
+    "description": "Meera to ask Acme for their procurement contact",
+    "task_text": "Meera to ask Acme for their procurement contact",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "df734b007a1a7151fd30987d338741afcb78cbe82fd83657a132b854a56bccb6"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [x] Rahul to set up the staging environment",
+    "description": "Rahul to set up the staging environment",
+    "task_text": "Rahul to set up the staging environment",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "df0b218ef9d49b7fdd40a3f14be6f35f1012203d31090b45d3a9e3fb4ad1ace2"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-09-qa-standup.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "5e9876db0d7c057611fe915f061162f563b1b65a8ca62040fa6ba1d3c8251cbb",
+  "size_bytes": 336,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-09",
+   "date_source": "date_line",
+   "date_raw": "9 September 2026",
+   "title": "QA and billing standup",
+   "attendees": [
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Karan to send the vendor invoice list by Friday",
+    "description": "Karan to send the vendor invoice list by Friday",
+    "task_text": "Karan to send the vendor invoice list",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "6f890fc61a14220dd18c46e9aaa9372a9b2bed4ef02ee5d79aef59aaa98c136e"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Priya to set up the test data",
+    "description": "Priya to set up the test data",
+    "task_text": "Priya to set up the test data",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "88f5e68412faf446c908f140472da7982698d8a9d60cafffbbb48027a9f55cd3"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-10-acme-renewal-prep.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "985a014fd1da6d22201c926d8d11e1dd5d7189b7e387094b2681ec410e70d25a",
+  "size_bytes": 487,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-10",
+   "date_source": "date_line",
+   "date_raw": "2026-09-10",
+   "title": "Acme renewal prep",
+   "attendees": [
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Lena Fischer",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Lena to pull Acme's usage report for the last 6 months by tomorrow",
+    "description": "Lena to pull Acme's usage report for the last 6 months by tomorrow",
+    "task_text": "Lena to pull Acme's usage report for the last 6 months",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "3cd63079a49c01ebd22216ebc00833de310ad436c6ba1d7e710b03eb84125a2b"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Karan to confirm discount ceiling with the CFO by 2026-09-14",
+    "description": "Karan to confirm discount ceiling with the CFO by 2026-09-14",
+    "task_text": "Karan to confirm discount ceiling with the CFO",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "693f7936580371d1e4f8bc63752c2a6f25986663dc8140a57f1622132b836a5b"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Meera to book the renewal call with Acme's CTO",
+    "description": "Meera to book the renewal call with Acme's CTO",
+    "task_text": "Meera to book the renewal call with Acme's CTO",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "c559988294ab435c591590006ab3d774f7c60dec2cc310e9caf43cbaffb343ed"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Someone to update the CRM notes",
+    "description": "Someone to update the CRM notes",
+    "task_text": "Someone to update the CRM notes",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "9860f66d61c19839ccabdf93373b9a4461da99aefbd659e74eadeaa32c8120f4"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-14-onboarding-flow-design.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "f90f026456ed3f9fa1860e6df6f18c2e09b18efc7f44d4d1a121cb84aa59fa5f",
+  "size_bytes": 521,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-14",
+   "date_source": "date_line",
+   "date_raw": "Monday, 14 September 2026",
+   "title": "Onboarding flow design",
+   "attendees": [
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Lena Fischer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Anita to finalise the welcome-email copy by Wed 16 Sep",
+    "description": "Anita to finalise the welcome-email copy by Wed 16 Sep",
+    "task_text": "Anita to finalise the welcome-email copy",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "3f7b3cae4663359035f036b5a063de397518d467374ae33d9c6204cd7177170b"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Priya to write acceptance tests for the signup flow by 18 Sep",
+    "description": "Priya to write acceptance tests for the signup flow by 18 Sep",
+    "task_text": "Priya to write acceptance tests for the signup flow",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "e3a1ed6394282d991f869a983a21602e45ee02186d7a3b7777c3c9098bd91d33"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Rahul to estimate the SSO work",
+    "description": "Rahul to estimate the SSO work",
+    "task_text": "Rahul to estimate the SSO work",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "b63738e88c34d7971239a340b407f6e4b6d9e70e91afe40557c7bdc3b5421e5b"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Lena to collect 5 customer quotes for the landing page by end of month",
+    "description": "Lena to collect 5 customer quotes for the landing page by end of month",
+    "task_text": "Lena to collect 5 customer quotes for the landing page",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "5a7e74e10bc6068d874e5a26c7b41152e4c4796feca874332d4aae9dff39341d"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-15-quote-portal-weekly.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "e35881cb435bf439ce25d3aa48e0318a9e19a27ae6d614d664152efcff177174",
+  "size_bytes": 439,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-15",
+   "date_source": "date_line",
+   "date_raw": "2026-09-15",
+   "title": "Quote portal weekly",
+   "attendees": [
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Mehta",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [x] Priya to send the revised quote to Acme",
+    "description": "Priya to send the revised quote to Acme",
+    "task_text": "Priya to send the revised quote to Acme",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "1a3a8bdc7f2e4cefbca109e9b65b3ad9a3f4e95abe8579e1892f809254f9c8be"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Anita to share updated wireframes by Thursday",
+    "description": "Anita to share updated wireframes by Thursday",
+    "task_text": "Anita to share updated wireframes",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "8f30ea1e2fb3aa5b81d4f2546b096c9c9739b31268abb2eb3bccca00b2153abb"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Sam to confirm cloud budget with finance by Friday",
+    "description": "Sam to confirm cloud budget with finance by Friday",
+    "task_text": "Sam to confirm cloud budget with finance",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "2ae60066e2622d9884173969ae9a0f1173030b8690c6ece7d19cbc7c60344d28"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Rahul to fix the pagination bug",
+    "description": "Rahul to fix the pagination bug",
+    "task_text": "Rahul to fix the pagination bug",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "60a47196030d80c857296254b463c7a5b58e8a885262f42e5a882160d3274beb"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-16-standup.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "54eb1509438160277a9d1d1902552ca60747578ec284658aa7aca8eb26d1de4b",
+  "size_bytes": 318,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-16",
+   "date_source": "front_matter",
+   "date_raw": "2026-09-16",
+   "title": "Team standup",
+   "attendees": [
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Lena Fischer",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Lena to draft the case study outline by 2026-09-21",
+    "description": "Lena to draft the case study outline by 2026-09-21",
+    "task_text": "Lena to draft the case study outline",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "af41ff3bfdb1069c281e9ba1ca0cad0a6dac31aab536f05a58f0cf6def1408f4"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Meera to update the pipeline sheet by Friday",
+    "description": "Meera to update the pipeline sheet by Friday",
+    "task_text": "Meera to update the pipeline sheet",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "34219e14f9781ddd39c9de79c877c7e8d4ef352edf053499b4db97fe6f4db891"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-17-billing-migration-sync.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "27858323cabd0a60c0ec662f84dacdc445666bb2c75fe42e38429f7e83252212",
+  "size_bytes": 479,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-17",
+   "date_source": "date_line",
+   "date_raw": "2026-09-17",
+   "title": "Billing migration sync",
+   "attendees": [
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Priya to sign off the cutover checklist by Monday",
+    "description": "Priya to sign off the cutover checklist by Monday",
+    "task_text": "Priya to sign off the cutover checklist",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "903dd69f70ae6d3ab7807ec35ffd8361fbcf398ba0f4635dcc402c8aafb9f194"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Sam to run the dry-run migration on staging by 2026-09-22",
+    "description": "Sam to run the dry-run migration on staging by 2026-09-22",
+    "task_text": "Sam to run the dry-run migration on staging",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "c7cbe0c46cdedf4465a5d24b57e973937dc8d4320c278a9d6b7f262c6503a537"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [x] Karan to export last quarter invoices",
+    "description": "Karan to export last quarter invoices",
+    "task_text": "Karan to export last quarter invoices",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "e5f2d5898eba8371948694cec4021e36359c388d822af0a3d4461485ac0efb08"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Rahul to review the schema mapping doc",
+    "description": "Rahul to review the schema mapping doc",
+    "task_text": "Rahul to review the schema mapping doc",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "506ecb29583db000d2e6b055da9502d7abd9f52ac6dffd2aca143fbfd5ceb17f"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-18-design-review.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "3326610997cb38e59c9052402712d73160e4230a41cef38efeef2360a8d6a354",
+  "size_bytes": 942,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-18",
+   "date_source": "date_line",
+   "date_raw": "2026-09-18",
+   "title": "Design review (brain dump)",
+   "attendees": [
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Mehta",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Lena Fischer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] @anita: audit colour contrast on the dashboard by Mon",
+    "description": "@anita: audit colour contrast on the dashboard by Mon",
+    "task_text": "@anita: audit colour contrast on the dashboard",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "ac7bdde60caa77ea558ffc32fff5de076b05786c7f8776b28ac0487f9829cbe7"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Anita & Rahul to agree on the component API by Wednesday",
+    "description": "Anita & Rahul to agree on the component API by Wednesday",
+    "task_text": "Anita & Rahul to agree on the component API",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "b60f5c20c2ad5a8c1c0ae69fa3a7771e076b0fc41fdc6002593d54f40581f3d9"
+   },
+   {
+    "line_start": 13,
+    "line_end": 13,
+    "raw_text": "- [ ] Lena (with Priya) to collect user feedback on the prototype by 2026-09-25",
+    "description": "Lena (with Priya) to collect user feedback on the prototype by 2026-09-25",
+    "task_text": "Lena (with Priya) to collect user feedback on the prototype",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "3d3e1c4f1e6d75dc33c8ea1825fff47023c45e3f65216f392aaa0693f2008148"
+   },
+   {
+    "line_start": 14,
+    "line_end": 14,
+    "raw_text": "- [ ] Everyone to review the prototype before the next review",
+    "description": "Everyone to review the prototype before the next review",
+    "task_text": "Everyone to review the prototype before the next review",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "95d456a8f0d7145b5240b19754d6f3bcfe9f52b509e67de6128545d45403ae06"
+   },
+   {
+    "line_start": 15,
+    "line_end": 15,
+    "raw_text": "- [ ] TBD to write the design-system changelog",
+    "description": "TBD to write the design-system changelog",
+    "task_text": "TBD to write the design-system changelog",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "83762c63b79da74b333201a2c40a6a8bc3ddb7375cf76492e9043ba0418aebeb"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-21-incident-review.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "db08a5b8542aa71978b3f80cdfae0bfdcf89243b08aaa2106d5070c73b92ad78",
+  "size_bytes": 767,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-21",
+   "date_source": "date_line",
+   "date_raw": "2026-09-21",
+   "title": "Incident review: billing double-charge",
+   "attendees": [
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 14,
+    "line_end": 14,
+    "raw_text": "- [ ] Sam to write the postmortem by EOD tomorrow",
+    "description": "Sam to write the postmortem by EOD tomorrow",
+    "task_text": "Sam to write the postmortem",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "1ddb32643a3a20c506b1996b97493c901eefa225328e420f8fec988b253e2a60"
+   },
+   {
+    "line_start": 15,
+    "line_end": 15,
+    "raw_text": "- [ ] Rahul to add idempotency keys to the payment call by Friday",
+    "description": "Rahul to add idempotency keys to the payment call by Friday",
+    "task_text": "Rahul to add idempotency keys to the payment call",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "9a152b35184711905df9a3a6280e54f182f58062a86505835d2458f336801b27"
+   },
+   {
+    "line_start": 16,
+    "line_end": 16,
+    "raw_text": "- [ ] Priya to add a regression test for double charge by 25 Sep",
+    "description": "Priya to add a regression test for double charge by 25 Sep",
+    "task_text": "Priya to add a regression test for double charge",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "65db73c09c04ddd3eb201dac3615841184b0d7c9fdbc473df4f4a2b9e170e255"
+   },
+   {
+    "line_start": 17,
+    "line_end": 17,
+    "raw_text": "- [ ] Karan to refund affected customers",
+    "description": "Karan to refund affected customers",
+    "task_text": "Karan to refund affected customers",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "dd22d17c927349b29ab716361038ce02eff7925aaf4cebcbfdb75fab7d55e650"
+   }
+  ],
+  "candidates": [],
+  "warnings": [
+   {
+    "code": "W-CHECKBOX-IGNORED-REGION",
+    "line": 9,
+    "message": "2026-09-21-incident-review.md:9: checkbox inside an ignored region (code fence or comment); not imported. Next: move it out of the region.",
+    "detail": "{\"region\": \"quote\", \"raw_text\": \"> - [ ] Karan to refund affected customers by Friday\"}"
+   }
+  ]
+ },
+ {
+  "rel_path": "2026-09-22-quote-portal-weekly.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "71132b175e88d7980ed3ef4936d3a2260d9f9bfda732691711d161739f8ffe49",
+  "size_bytes": 444,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-22",
+   "date_source": "date_line",
+   "date_raw": "2026-09-22",
+   "title": "Quote portal weekly",
+   "attendees": [
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Mehta",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Anita to share updated wireframes by Thursday",
+    "description": "Anita to share updated wireframes by Thursday",
+    "task_text": "Anita to share updated wireframes",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "8f30ea1e2fb3aa5b81d4f2546b096c9c9739b31268abb2eb3bccca00b2153abb"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [x] Sam to confirm cloud budget with finance",
+    "description": "Sam to confirm cloud budget with finance",
+    "task_text": "Sam to confirm cloud budget with finance",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "bc19efc366e376464f98b1a738df26b46ffe2258f7b140de34cf0b259a93591e"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Meera to send Acme the procurement form by 2026-09-25",
+    "description": "Meera to send Acme the procurement form by 2026-09-25",
+    "task_text": "Meera to send Acme the procurement form",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "4ada6973f287fe1f281cb034fb28c244216c2d9d15fae54a28fda2f471d7ea4c"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Rahul to fix the pagination bug by Wednesday",
+    "description": "Rahul to fix the pagination bug by Wednesday",
+    "task_text": "Rahul to fix the pagination bug",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "af163d10d5afa5a94d37f43bb9b90ecdb3617b24ededc3d3ea552d5804df8e6f"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-23-standup.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "0e320a02362b82313c4744e366e550ad926cc4b96bb4b2d5ce8008d5a12abbfb",
+  "size_bytes": 271,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-23",
+   "date_source": "date_line",
+   "date_raw": "2026-09-23",
+   "title": "Team standup",
+   "attendees": []
+  },
+  "items": [
+   {
+    "line_start": 8,
+    "line_end": 8,
+    "raw_text": "- [ ] Rahul to rebase the feature branch by Thursday",
+    "description": "Rahul to rebase the feature branch by Thursday",
+    "task_text": "Rahul to rebase the feature branch",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "008b26fd64b84dab78d1d3b1be5959639d558ad8dd840795ef5a82c98e44dc7d"
+   },
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Sam to rotate the staging credentials",
+    "description": "Sam to rotate the staging credentials",
+    "task_text": "Sam to rotate the staging credentials",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "9cbf9796bc5d81938306a9c65431b17697a19dd33f75a03238e6dc566cb1b57a"
+   }
+  ],
+  "candidates": [],
+  "warnings": [
+   {
+    "code": "W-ATTENDEES-MISSING",
+    "line": null,
+    "message": "2026-09-23-standup.md: no attendees listed. Next: add an 'Attendees:' line so owners can be resolved.",
+    "detail": null
+   }
+  ]
+ },
+ {
+  "rel_path": "2026-09-24-onboarding-flow-design.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "4cef6147f21e16b691470840ff0ec597ce174431da706a6d39574b56f7de06ea",
+  "size_bytes": 491,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-24",
+   "date_source": "date_line",
+   "date_raw": "2026-09-24",
+   "title": "Onboarding flow design",
+   "attendees": [
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Lena Fischer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Anita to finalise the welcome-email copy by Friday",
+    "description": "Anita to finalise the welcome-email copy by Friday",
+    "task_text": "Anita to finalise the welcome-email copy",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "f8ea79d3a6379a01dec6a7f4fca32257e24e36dbb8d5ff7485a57b122eb882eb"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [x] Priya to write acceptance tests for the signup flow",
+    "description": "Priya to write acceptance tests for the signup flow",
+    "task_text": "Priya to write acceptance tests for the signup flow",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "8f05e7d627a9b657931247468c7bb9e17ecdd5651f757ee3a75c347317199bfd"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Lena to collect 5 customer quotes for the landing page by 2 Oct",
+    "description": "Lena to collect 5 customer quotes for the landing page by 2 Oct",
+    "task_text": "Lena to collect 5 customer quotes for the landing page",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "8340f9486d37d733dc6ca77e2522f1ca126fa9a3bdde586fc87dc56830384676"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Rahul to estimate SSO work by Monday",
+    "description": "Rahul to estimate SSO work by Monday",
+    "task_text": "Rahul to estimate SSO work",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "ae3269b774f9e3a676c969919cb2f07c7fcf8babc42de97dfffe2602399bca43"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-25-qa-sync.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "f751a88394fc21b146b220ed637ce5e963e084a01cb17b2e29390db00e6da7ef",
+  "size_bytes": 314,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-25",
+   "date_source": "date_line",
+   "date_raw": "2026-09-25",
+   "title": "QA sync",
+   "attendees": [
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Priya to triage the open bug list by Monday",
+    "description": "Priya to triage the open bug list by Monday",
+    "task_text": "Priya to triage the open bug list",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "82cb868ebb398a525a63f79c4960a4807e66097dafaca99def0da23eeb1dbb62"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Rahul to fix the top three critical bugs by 2026-10-02",
+    "description": "Rahul to fix the top three critical bugs by 2026-10-02",
+    "task_text": "Rahul to fix the top three critical bugs",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "969aed3d18a3fdd0f52c39312f13a1264cd5a993ffd387450bf2def46381153e"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-28-acme-renewal-checkin.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "6931eef8c5ec9e7b8d1340ad94761c0152f26c2c67ce0cd2eb87e95df074c0b2",
+  "size_bytes": 490,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-28",
+   "date_source": "date_line",
+   "date_raw": "2026-09-28",
+   "title": "Acme renewal check-in",
+   "attendees": [
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Lena Fischer",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Meera to book the renewal call with Acme's CTO by Wednesday",
+    "description": "Meera to book the renewal call with Acme's CTO by Wednesday",
+    "task_text": "Meera to book the renewal call with Acme's CTO",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "77acf56ced00d65e4a380e4eb9d53f3b2112a521b1e7573fb60008a99c05a9e4"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Karan to send Acme the revised pricing sheet by 2026-10-01",
+    "description": "Karan to send Acme the revised pricing sheet by 2026-10-01",
+    "task_text": "Karan to send Acme the revised pricing sheet",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "a7e5578778b4b8147aa839f30ca221b09cae4031a4a7053790196e54c97c0d62"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Lena to share the usage report with Meera",
+    "description": "Lena to share the usage report with Meera",
+    "task_text": "Lena to share the usage report with Meera",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "cc7f99684bc2b40816cda89e24cdcd20c771b04a6d84aca7c684a806d2f08b51"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Priya to prepare the renewal one-pager by Friday",
+    "description": "Priya to prepare the renewal one-pager by Friday",
+    "task_text": "Priya to prepare the renewal one-pager",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "abc3d63ada12ffb793c49bb9e23e483e2251380c36eb195295e3c3ab92c54c73"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-29-billing-cutover-planning.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "72422cde6563f87a5aca136ffcf3d3a3471688bf0c80ca9695dfa10a0ccae6bc",
+  "size_bytes": 552,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-29",
+   "date_source": "date_line",
+   "date_raw": "2026-09-29",
+   "title": "Billing migration cutover planning",
+   "attendees": [
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Priya S. to run the invoice rounding tests by Thursday",
+    "description": "Priya S. to run the invoice rounding tests by Thursday",
+    "task_text": "Priya S. to run the invoice rounding tests",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "8f3d0596eb035c1f8844d670f0ab5c19e7a765237c62e68d299837aef90f5c14"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Priya N. to notify customers about the maintenance window by 2026-10-05",
+    "description": "Priya N. to notify customers about the maintenance window by 2026-10-05",
+    "task_text": "Priya N. to notify customers about the maintenance window",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "faa2726db226a041632c342dd998f1670f18198d4e4f78bdc9fbad2c95b6bdaf"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Sam to schedule cutover for Saturday 10 Oct",
+    "description": "Sam to schedule cutover for Saturday 10 Oct",
+    "task_text": "Sam to schedule cutover",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "d9a74369c89f38cec368a4f9971d933e63c7b5644ee7158965a2976cb505d34a"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Karan to freeze invoice edits from 9 Oct",
+    "description": "Karan to freeze invoice edits from 9 Oct",
+    "task_text": "Karan to freeze invoice edits",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "b32dbb693debcc915ab4a0e44cbeec84a40c3e23f385b59c4fddcd78ec8023c0"
+   }
+  ],
+  "candidates": [],
+  "warnings": [
+   {
+    "code": "W-DATE-NOT-DUE",
+    "line": 12,
+    "message": "2026-09-29-billing-cutover-planning.md:12: phrase '9 Oct' is not a due date; kept as other date. Next: write 'due <date>' if it is one.",
+    "detail": "9 Oct"
+   }
+  ]
+ },
+ {
+  "rel_path": "2026-09-30-q4-offsite.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "b792d327ca5acfbe2a0ba3c947571dfe07cddc5107cb949365d9161bc017681e",
+  "size_bytes": 1685,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-30",
+   "date_source": "date_line",
+   "date_raw": "2026-09-30",
+   "title": "Q4 planning offsite",
+   "attendees": [
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Mehta",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Lena Fischer",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Meera to finalise the Q4 sales targets by Oct 3rd",
+    "description": "Meera to finalise the Q4 sales targets by Oct 3rd",
+    "task_text": "Meera to finalise the Q4 sales targets",
+    "checkbox_state": "open",
+    "section_heading": "Morning: where we are",
+    "occurrence_index": 0,
+    "block_hash": "a6a9654169dddb805dc5e59357e83a5558c7af69a943a9c52c566b99bd338bdc"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "  - [ ] Karan to validate targets against the budget by Oct 5th",
+    "description": "Karan to validate targets against the budget by Oct 5th",
+    "task_text": "Karan to validate targets against the budget",
+    "checkbox_state": "open",
+    "section_heading": "Morning: where we are",
+    "occurrence_index": 0,
+    "block_hash": "8def019d8b22076e79903977921738352300aa20e353b10c2658de862d516518"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "* [ ] Lena to run the customer survey, results due 15 October",
+    "description": "Lena to run the customer survey, results due 15 October",
+    "task_text": "Lena to run the customer survey, results",
+    "checkbox_state": "open",
+    "section_heading": "Morning: where we are",
+    "occurrence_index": 0,
+    "block_hash": "667548a2b86e5bb3cfa6c6fbd1bcfdc4aabc9e08f2571c31ab65f23fb2409b87"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "+ [ ] Sam to propose the on-call rotation by mid-October",
+    "description": "Sam to propose the on-call rotation by mid-October",
+    "task_text": "Sam to propose the on-call rotation",
+    "checkbox_state": "open",
+    "section_heading": "Morning: where we are",
+    "occurrence_index": 0,
+    "block_hash": "0e5665c461b5c899d2b0d689c3792d5103652878433cfc0b76dcc82de5e3923b"
+   },
+   {
+    "line_start": 16,
+    "line_end": 16,
+    "raw_text": "- [ ] Priya to own the hiring plan for the two QA roles",
+    "description": "Priya to own the hiring plan for the two QA roles",
+    "task_text": "Priya to own the hiring plan for the two QA roles",
+    "checkbox_state": "open",
+    "section_heading": "Afternoon: people and process",
+    "occurrence_index": 0,
+    "block_hash": "e583132cca67aec6e111c829b2224c97a7699d0c80fabd0d66c515e531c84ab0"
+   },
+   {
+    "line_start": 17,
+    "line_end": 17,
+    "raw_text": "- [ ] Rahul to prepare the architecture overview by Friday",
+    "description": "Rahul to prepare the architecture overview by Friday",
+    "task_text": "Rahul to prepare the architecture overview",
+    "checkbox_state": "open",
+    "section_heading": "Afternoon: people and process",
+    "occurrence_index": 0,
+    "block_hash": "d130e64ad571cb4416ec1440e980801b4787a0d76fe971390ae9370f8401fe18"
+   },
+   {
+    "line_start": 18,
+    "line_end": 18,
+    "raw_text": "- [ ] Everyone to submit their Q4 goals by 7 Oct",
+    "description": "Everyone to submit their Q4 goals by 7 Oct",
+    "task_text": "Everyone to submit their Q4 goals",
+    "checkbox_state": "open",
+    "section_heading": "Afternoon: people and process",
+    "occurrence_index": 0,
+    "block_hash": "ea6f95802293aee69236b1430ca093b3a9443a8fb96bb5c90a601cec90a61dba"
+   }
+  ],
+  "candidates": [
+   {
+    "kind": "table_row",
+    "line": 22,
+    "text": "| Anita | Refresh the brand kit | 2026-10-09 |"
+   },
+   {
+    "kind": "action_line",
+    "line": 24,
+    "text": "ACTION: Karan to circulate the offsite summary tomorrow"
+   }
+  ],
+  "warnings": [
+   {
+    "code": "W-NONCHECKBOX-CANDIDATES",
+    "line": 22,
+    "message": "2026-09-30-q4-offsite.md:22: possible action line is not a checkbox and was not imported. Next: turn it into '- [ ] ...' if it is an action.",
+    "detail": "{\"kind\": \"table_row\", \"text\": \"| Anita | Refresh the brand kit | 2026-10-09 |\"}"
+   },
+   {
+    "code": "W-NONCHECKBOX-CANDIDATES",
+    "line": 24,
+    "message": "2026-09-30-q4-offsite.md:24: possible action line is not a checkbox and was not imported. Next: turn it into '- [ ] ...' if it is an action.",
+    "detail": "{\"kind\": \"action_line\", \"text\": \"ACTION: Karan to circulate the offsite summary tomorrow\"}"
+   }
+  ]
+ },
+ {
+  "rel_path": "2026-09-30-standup.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "0d638688f09e61c3dee82fbd015d06a360e851ac8506b699ef59d48a408b7573",
+  "size_bytes": 314,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-09-30",
+   "date_source": "front_matter",
+   "date_raw": "2026-09-30",
+   "title": "Team standup",
+   "attendees": [
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Karan to approve the Q4 cloud spend by 2026-10-02",
+    "description": "Karan to approve the Q4 cloud spend by 2026-10-02",
+    "task_text": "Karan to approve the Q4 cloud spend",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "ed797863d093de6a42d09a6736ebccc29e8fe3b2ccc885e8589091dd9a8d9eef"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Priya to share the Q4 roadmap draft by Friday",
+    "description": "Priya to share the Q4 roadmap draft by Friday",
+    "task_text": "Priya to share the Q4 roadmap draft",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "e7131d284a70b7dcf22b58539d2177957f5b09c3000f65dcf296885730763356"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-10-01-quote-portal-weekly.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "be514aa565bc991ae5eb5d17d8387a9aed4c1d6b6dff4d84d6006551a0a88e49",
+  "size_bytes": 442,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-10-01",
+   "date_source": "date_line",
+   "date_raw": "2026-10-01",
+   "title": "Quote portal weekly",
+   "attendees": [
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Mehta",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [x] Meera to send Acme the procurement form",
+    "description": "Meera to send Acme the procurement form",
+    "task_text": "Meera to send Acme the procurement form",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "516253e2f7b450b70722d6d254094d240f972d68758cc7b86bcead112111d97c"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Rahul to deploy the beta to staging by Friday",
+    "description": "Rahul to deploy the beta to staging by Friday",
+    "task_text": "Rahul to deploy the beta to staging",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "4d3b036b78ea7d2cda530d8606eebf61fc23c11d8778fb099a880f2d5e931426"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Anita to hand over final designs to dev by 2026-10-06",
+    "description": "Anita to hand over final designs to dev by 2026-10-06",
+    "task_text": "Anita to hand over final designs to dev",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "075779186f0ce9c9125564f4ac725df74036cd4daef3a0aa0f818b4a1040be34"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Team to decide on the launch date",
+    "description": "Team to decide on the launch date",
+    "task_text": "Team to decide on the launch date",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "27f2048b973379d00f05ba7ea69cfa68498b6bf289607152bfcb577a932dc6b9"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-10-02-finance-sync.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "cb51a32f5064fec4e51259142376b1de76b84adfdf0d50c96586b89b76e7afe7",
+  "size_bytes": 455,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-10-02",
+   "date_source": "date_line",
+   "date_raw": "2026-10-02",
+   "title": "Finance sync",
+   "attendees": [
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [X] Karan to approve the Q4 cloud spend",
+    "description": "Karan to approve the Q4 cloud spend",
+    "task_text": "Karan to approve the Q4 cloud spend",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "dd8e09a00a16504ebbc56368fd5a6b7961e88b2316b0a062abc4218c94586ecd"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "* [ ] Sam to cut cloud costs by 10% — proposal by 2026-10-09",
+    "description": "Sam to cut cloud costs by 10% — proposal by 2026-10-09",
+    "task_text": "Sam to cut cloud costs by 10% — proposal",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "b34e21059a80b18041ca8b733ea00b6a4ff70d42f9dd9ecd9bc35db1b27e18df"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "+ [ ] Meera to share the Q4 pipeline forecast by Wednesday",
+    "description": "Meera to share the Q4 pipeline forecast by Wednesday",
+    "task_text": "Meera to share the Q4 pipeline forecast",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "a82fbae9ed2a8d7ce6f209d4788431ba89409d4d9b77fc8baf526b6793c39dfc"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Karan to prepare the board finance slide by 12 Oct",
+    "description": "Karan to prepare the board finance slide by 12 Oct",
+    "task_text": "Karan to prepare the board finance slide",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "2a960b1b0cc075c35b40dd020e94c16f9f7754934a32835e938625f06ef0317d"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-10-05-onboarding-retro.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "9751189432fbef4021ba8cc40a899c8e7062600e9ab7991116ce917b5ee1654e",
+  "size_bytes": 457,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-10-05",
+   "date_source": "date_line",
+   "date_raw": "2026-10-05",
+   "title": "Onboarding flow checkpoint",
+   "attendees": [
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Lena Fischer",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Rahul to start SSO spike by next Tuesday",
+    "description": "Rahul to start SSO spike by next Tuesday",
+    "task_text": "Rahul to start SSO spike",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "ffa71991f470605dccbe2dac7c0e9b00c631c97beb835649cf8008a700a140b5"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Lena to publish the customer quotes by 9 Oct",
+    "description": "Lena to publish the customer quotes by 9 Oct",
+    "task_text": "Lena to publish the customer quotes",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "af39c6c229d5de61bcb8504149d0b0e3a122b7bde2a07474ee72c91b80955c6e"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [x] Anita to finalise the welcome-email copy",
+    "description": "Anita to finalise the welcome-email copy",
+    "task_text": "Anita to finalise the welcome-email copy",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "91d6ad1545755485101ee271b10e96c9a37b5e5849edfc393e785a4dc03f9458"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Priya to review the welcome email for accessibility",
+    "description": "Priya to review the welcome email for accessibility",
+    "task_text": "Priya to review the welcome email for accessibility",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "4088e53d2a62e841c78c1af4b8af64935a96d66c2edfd809c7bf52aec0df119e"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-10-06-quote-portal-weekly.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "6fa68daa2410a3bd8cd8c18da0f5cd2f21680c0f9aa3a485685acc44002bc22d",
+  "size_bytes": 450,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-10-06",
+   "date_source": "date_line",
+   "date_raw": "2026-10-06",
+   "title": "Quote portal weekly",
+   "attendees": [
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Mehta",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Rahul to deploy the beta to staging by tomorrow",
+    "description": "Rahul to deploy the beta to staging by tomorrow",
+    "task_text": "Rahul to deploy the beta to staging",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "e15af4925ac4f44f5374415aa27fed76945a0df6276f6ce85b542dece8b00235"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Meera to demo the portal to Acme on 2026-10-14",
+    "description": "Meera to demo the portal to Acme on 2026-10-14",
+    "task_text": "Meera to demo the portal to Acme",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "5498d661fac936470613299841963b6bc35b3ff9956699b4f8e3e616f3643629"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Sam to set up uptime monitoring",
+    "description": "Sam to set up uptime monitoring",
+    "task_text": "Sam to set up uptime monitoring",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "641fd83caa85209cf0d6f3bb15c65fd0d6f5df1e8e1683568f14716a46800d51"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Priya to write the beta test checklist by Thursday",
+    "description": "Priya to write the beta test checklist by Thursday",
+    "task_text": "Priya to write the beta test checklist",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "2fd502bb976ac6a9ac2f70d66c0587c91731d854db80fb880416587ea7eb8b8a"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-10-07-standup.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "46450ec5499cb17673ec4100a1bf8ff8f55663c11b5b0226213f82485b4d81fa",
+  "size_bytes": 265,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-10-07",
+   "date_source": "date_line",
+   "date_raw": "2026-10-07",
+   "title": "Team standup",
+   "attendees": [
+    {
+     "raw_name": "Rahul Mehta",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Rahul to review Anita's PR by tomorrow",
+    "description": "Rahul to review Anita's PR by tomorrow",
+    "task_text": "Rahul to review Anita's PR",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "693a45d44bd184aa0913794882829542dd87f80216cf36b1972bf9eddac5fb7b"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Anita to update the style guide",
+    "description": "Anita to update the style guide",
+    "task_text": "Anita to update the style guide",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "6b6e98a419be75f10632537598bf74402decc2928495f482f9aea51aadc0e1ac"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-10-08-billing-go-no-go.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "a0f03d02bc7dadebdfcf5181391a3ef2a5b210fe34911ad51be1b246811f8dfc",
+  "size_bytes": 478,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-10-08",
+   "date_source": "date_line",
+   "date_raw": "2026-10-08",
+   "title": "Billing migration go/no-go",
+   "attendees": [
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Priya to circulate the go/no-go summary by EOD",
+    "description": "Priya to circulate the go/no-go summary by EOD",
+    "task_text": "Priya to circulate the go/no-go summary",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "f6c895cc731fc0c2d36b1c58f1183e74c7d04cd056e042313f76103673e354fa"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Sam to confirm rollback plan by 2026-10-09",
+    "description": "Sam to confirm rollback plan by 2026-10-09",
+    "task_text": "Sam to confirm rollback plan",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "3aca604386f5b8ef9ee47bcdc1e83e63e11afab76ff60236628ebd14fa77bec0"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Karan to freeze invoice edits from 9 Oct",
+    "description": "Karan to freeze invoice edits from 9 Oct",
+    "task_text": "Karan to freeze invoice edits",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "b32dbb693debcc915ab4a0e44cbeec84a40c3e23f385b59c4fddcd78ec8023c0"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [x] Priya N. to notify customers about the maintenance window",
+    "description": "Priya N. to notify customers about the maintenance window",
+    "task_text": "Priya N. to notify customers about the maintenance window",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "b7394e96f13eb0a8c13300bb51aad7bb7e16907dc0c5a3eec6bc94d1dabeb9c1"
+   }
+  ],
+  "candidates": [],
+  "warnings": [
+   {
+    "code": "W-DATE-NOT-DUE",
+    "line": 11,
+    "message": "2026-10-08-billing-go-no-go.md:11: phrase '9 Oct' is not a due date; kept as other date. Next: write 'due <date>' if it is one.",
+    "detail": "9 Oct"
+   }
+  ]
+ },
+ {
+  "rel_path": "2026-10-09-security-review.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "b299e2242471a625d5326abfa052f2fef00dd21ba097c48fcf292c52e46fdf00",
+  "size_bytes": 1076,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-10-09",
+   "date_source": "date_line",
+   "date_raw": "2026-10-09",
+   "title": "Security review",
+   "attendees": [
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 18,
+    "line_end": 18,
+    "raw_text": "- [ ] Sam to enable MFA on all admin accounts by 2026-10-16",
+    "description": "Sam to enable MFA on all admin accounts by 2026-10-16",
+    "task_text": "Sam to enable MFA on all admin accounts",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "0564af77212a9516a301b736e3b34925c8ea9acf2e3f3ca3e6f07a184bb246cd"
+   },
+   {
+    "line_start": 19,
+    "line_end": 19,
+    "raw_text": "- [ ] Rahul to patch the outdated express dependency by Monday",
+    "description": "Rahul to patch the outdated express dependency by Monday",
+    "task_text": "Rahul to patch the outdated express dependency",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "ded846cc79f4a941aa0e3b6a88a48c06f7111c174ad53fa3739ad88a1d707932"
+   },
+   {
+    "line_start": 20,
+    "line_end": 20,
+    "raw_text": "- [ ] Priya to document the incident response steps by 23 Oct",
+    "description": "Priya to document the incident response steps by 23 Oct",
+    "task_text": "Priya to document the incident response steps",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "3551d272e2314c4d0df449940b5e4cbf7bd2c7bf786b5ad2607460676aa72235"
+   },
+   {
+    "line_start": 21,
+    "line_end": 21,
+    "raw_text": "- [x] Karan to revoke access for the two ex-contractors",
+    "description": "Karan to revoke access for the two ex-contractors",
+    "task_text": "Karan to revoke access for the two ex-contractors",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "4a8db1bbb29924bec6eb11e5abca0684504cbc4ea91f0e8a1928b59f7c315b29"
+   }
+  ],
+  "candidates": [],
+  "warnings": [
+   {
+    "code": "W-CHECKBOX-IGNORED-REGION",
+    "line": 10,
+    "message": "2026-10-09-security-review.md:10: checkbox inside an ignored region (code fence or comment); not imported. Next: move it out of the region.",
+    "detail": "{\"region\": \"fence\", \"raw_text\": \"- [ ] Owner to remediate finding by <date>\"}"
+   },
+   {
+    "code": "W-CHECKBOX-IGNORED-REGION",
+    "line": 13,
+    "message": "2026-10-09-security-review.md:13: checkbox inside an ignored region (code fence or comment); not imported. Next: move it out of the region.",
+    "detail": "{\"region\": \"comment\", \"raw_text\": \"<!-- - [ ] Sam to buy hardware tokens for everyone by Friday  (cut from the agenda, not agreed) -->\"}"
+   }
+  ]
+ },
+ {
+  "rel_path": "2026-10-10-sales-weekly.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "503f10549421d440d84f59d6c826d37200ddafd237e7116ac8344bbd62b39cd6",
+  "size_bytes": 337,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-10-10",
+   "date_source": "date_line",
+   "date_raw": "2026-10-10",
+   "title": "Sales weekly",
+   "attendees": [
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Lena Fischer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Meera to send the proposal to Orbit Labs by Tuesday",
+    "description": "Meera to send the proposal to Orbit Labs by Tuesday",
+    "task_text": "Meera to send the proposal to Orbit Labs",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "d4e704daba8a19178ef071703e8b18c1505161488befec5badbccfb3ad074a3c"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Lena to log the three new leads in CRM by EOD",
+    "description": "Lena to log the three new leads in CRM by EOD",
+    "task_text": "Lena to log the three new leads in CRM",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "2d3c2860daacc17e67cb866d04223c3401372a8e3573bfde6ee5bbfb3df8c287"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [x] Lena to update the Acme account notes",
+    "description": "Lena to update the Acme account notes",
+    "task_text": "Lena to update the Acme account notes",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "4d8eed7ea6c9dcc86fcbf78f370dd3364cdef38dccacdb3d4479da4f43313dc2"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-10-12-billing-post-cutover.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "17fb55f802924e1e288c2bb3636c6b62ca37f4ccdce81e4e3a2779a2d03e5b48",
+  "size_bytes": 488,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-10-12",
+   "date_source": "date_line",
+   "date_raw": "2026-10-12",
+   "title": "Billing migration post-cutover",
+   "attendees": [
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Verma",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Shah",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Sam to decommission the old billing DB by 2026-10-30",
+    "description": "Sam to decommission the old billing DB by 2026-10-30",
+    "task_text": "Sam to decommission the old billing DB",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "f0c84c415880e33d974851a596c372c642dcbffb19994db4b87ff7b6cf26f328"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Priya to verify invoice totals for the first 50 invoices by Wednesday",
+    "description": "Priya to verify invoice totals for the first 50 invoices by Wednesday",
+    "task_text": "Priya to verify invoice totals for the first 50 invoices",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "90931df18f76be50a868c3c45adb4e666d656af0800d08c0e8342aa2559f535f"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Karan to reconcile September ledger by 15 Oct",
+    "description": "Karan to reconcile September ledger by 15 Oct",
+    "task_text": "Karan to reconcile September ledger",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "4918325ca2e942ea07e1e2495d4a4c8f9b5675528c45d466a5b3f15bdffcea5c"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Rahul to write the migration runbook",
+    "description": "Rahul to write the migration runbook",
+    "task_text": "Rahul to write the migration runbook",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "9bd46c89fbbe9b784c3ff9a64f4869230b92fbf7801bee8951a254faa47222a2"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-10-13-quote-portal-weekly.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "ecbbf62b1fe8031caaee98317084b6cf97c729ffdbdffd0e2ac85d65a7d343d0",
+  "size_bytes": 432,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-10-13",
+   "date_source": "date_line",
+   "date_raw": "2026-10-13",
+   "title": "Quote portal weekly",
+   "attendees": [
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Rahul Mehta",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Anita Desai",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Sam Okafor",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [x] Rahul to deploy the beta to staging",
+    "description": "Rahul to deploy the beta to staging",
+    "task_text": "Rahul to deploy the beta to staging",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "e4d07852b0deeaf0f157c4dcb5a2675dc2db1e7a80d6cdc085c307d66671f355"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Anita to fix spacing issues flagged in review by Friday",
+    "description": "Anita to fix spacing issues flagged in review by Friday",
+    "task_text": "Anita to fix spacing issues flagged in review",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "e1c0c66d0eaf04d76832f113e3b758cf22caaaa49c27cdea5eb6f754855fc773"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [ ] Priya to collect beta feedback from Acme by 2026-10-20",
+    "description": "Priya to collect beta feedback from Acme by 2026-10-20",
+    "task_text": "Priya to collect beta feedback from Acme",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "34c320656a3e8dcbe3bfb29db0904ab1e8a9f9035f5940f33b7a31dd68bf3882"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Meera to follow up on the demo",
+    "description": "Meera to follow up on the demo",
+    "task_text": "Meera to follow up on the demo",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "0ed1b73d40517c0df69db532aa8143c559321451b9682edc8e2278c8a20b0b3c"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-10-14-acme-renewal-wrapup.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "3e5a92a25c0ab578f41e7ef4e82bece7a9540b3e3c40933fef3f9329b2c913a4",
+  "size_bytes": 477,
+  "mtime_ns": null,
+  "meeting": {
+   "date": "2026-10-14",
+   "date_source": "date_line",
+   "date_raw": "2026-10-14",
+   "title": "Acme renewal wrap-up",
+   "attendees": [
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Lena Fischer",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Karan Joshi",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Priya Nair",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 9,
+    "line_end": 9,
+    "raw_text": "- [ ] Karan to send the final contract to legal by tomorrow",
+    "description": "Karan to send the final contract to legal by tomorrow",
+    "task_text": "Karan to send the final contract to legal",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "d70835e1817242359f362920a60d7ac098fa290d9db57e4ac142291652c3adfa"
+   },
+   {
+    "line_start": 10,
+    "line_end": 10,
+    "raw_text": "- [ ] Lena to schedule the quarterly business review for November",
+    "description": "Lena to schedule the quarterly business review for November",
+    "task_text": "Lena to schedule the quarterly business review",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "6939787deaa6e36a52860abe718f61f594418eea85848313bcdce0ed86812b8e"
+   },
+   {
+    "line_start": 11,
+    "line_end": 11,
+    "raw_text": "- [x] Meera to book the renewal call with Acme's CTO",
+    "description": "Meera to book the renewal call with Acme's CTO",
+    "task_text": "Meera to book the renewal call with Acme's CTO",
+    "checkbox_state": "done",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "1ea46d1e26a09dbb38ac5aee761195722745ce530c269e0c554a64a5c6bb3d1f"
+   },
+   {
+    "line_start": 12,
+    "line_end": 12,
+    "raw_text": "- [ ] Priya to prepare the renewal one-pager",
+    "description": "Priya to prepare the renewal one-pager",
+    "task_text": "Priya to prepare the renewal one-pager",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "7a3b4f5cfa0c4a2e9cc46270372be1fc3ee56a218131f744aef956c29dbc50dc"
+   }
+  ],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "2026-09-09-notes-final-v2.md",
+  "status": "empty",
+  "failure": null,
+  "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "size_bytes": 0,
+  "mtime_ns": null,
+  "meeting": null,
+  "items": [],
+  "candidates": [],
+  "warnings": [
+   {
+    "code": "W-EMPTY-FILE",
+    "line": null,
+    "message": "2026-09-09-notes-final-v2.md: file is empty; nothing to ingest. Next: add notes or delete the file.",
+    "detail": null
+   }
+  ]
+ },
+ {
+  "rel_path": "2026-10-03-sales-pipeline.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "ab30049a3ebd2b494bdedaec7650c8527342f0407cce7b316de54e3462f5051d",
+  "size_bytes": 185,
+  "mtime_ns": null,
+  "meeting": {
+   "date": null,
+   "date_source": "none",
+   "date_raw": "sometime last week",
+   "title": "Sales pipeline",
+   "attendees": [
+    {
+     "raw_name": "Meera Iyer",
+     "email_hint": null
+    },
+    {
+     "raw_name": "Lena Fischer",
+     "email_hint": null
+    }
+   ]
+  },
+  "items": [
+   {
+    "line_start": 6,
+    "line_end": 6,
+    "raw_text": "- [ ] Meera to chase Orbit Labs by Friday",
+    "description": "Meera to chase Orbit Labs by Friday",
+    "task_text": "Meera to chase Orbit Labs",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "db2728e80a329297db92003e2d905fd3902129e98a7282a0b9329301275a3dd9"
+   },
+   {
+    "line_start": 7,
+    "line_end": 7,
+    "raw_text": "- [ ] Lena to clean up duplicate leads",
+    "description": "Lena to clean up duplicate leads",
+    "task_text": "Lena to clean up duplicate leads",
+    "checkbox_state": "open",
+    "section_heading": "Action items",
+    "occurrence_index": 0,
+    "block_hash": "2c58e03663548abfff39c4b5619050b5d4489429b8ef17bfe6a0ff3cde929b29"
+   }
+  ],
+  "candidates": [],
+  "warnings": [
+   {
+    "code": "W-MEETING-DATE-INVALID",
+    "line": 2,
+    "message": "2026-10-03-sales-pipeline.md:2: meeting date 'sometime last week' is not a valid date; date left empty. Next: write it as YYYY-MM-DD.",
+    "detail": null
+   }
+  ]
+ },
+ {
+  "rel_path": "scratch.md",
+  "status": "failed",
+  "failure": {
+   "code": "E-BINARY",
+   "message": "scratch.md: contains binary data (NUL bytes or binary header); file skipped. Next: remove it from the notes folder or replace it with a text note.",
+   "byte_offset": null,
+   "size_bytes": 249,
+   "os_reason": null
+  },
+  "content_sha256": "e066008ba847ef5b289136a1f880f56dfaf9dd377c7f2a69afb4b3190e843542",
+  "size_bytes": 249,
+  "mtime_ns": null,
+  "meeting": null,
+  "items": [],
+  "candidates": [],
+  "warnings": []
+ },
+ {
+  "rel_path": "untitled.md",
+  "status": "ok",
+  "failure": null,
+  "content_sha256": "0d3f52cd1b52d444bf45ba9ea56d42415e1e6f150bbdc9238f556b5c94d2e1a1",
+  "size_bytes": 105,
+  "mtime_ns": null,
+  "meeting": {
+   "date": null,
+   "date_source": "none",
+   "date_raw": null,
+   "title": "untitled",
+   "attendees": []
+  },
+  "items": [
+   {
+    "line_start": 1,
+    "line_end": 1,
+    "raw_text": "- [ ] Sam to chase the vendor",
+    "description": "Sam to chase the vendor",
+    "task_text": "Sam to chase the vendor",
+    "checkbox_state": "open",
+    "section_heading": null,
+    "occurrence_index": 0,
+    "block_hash": "9cb29478b0c1c8b3c96f0671eaceb561a3c64478a2d25e7c80e65a2bc92b4f3e"
+   },
+   {
+    "line_start": 2,
+    "line_end": 2,
+    "raw_text": "- [ ] Priya to send the slides by Friday",
+    "description": "Priya to send the slides by Friday",
+    "task_text": "Priya to send the slides",
+    "checkbox_state": "open",
+    "section_heading": null,
+    "occurrence_index": 0,
+    "block_hash": "1b68249537785f2b4375ac1865c32732a78c0a9edc46efd97fb46a532e0c2196"
+   }
+  ],
+  "candidates": [],
+  "warnings": [
+   {
+    "code": "W-ATTENDEES-MISSING",
+    "line": null,
+    "message": "untitled.md: no attendees listed. Next: add an 'Attendees:' line so owners can be resolved.",
+    "detail": null
+   },
+   {
+    "code": "W-MEETING-DATE-MISSING",
+    "line": null,
+    "message": "untitled.md: no meeting date found; relative due dates stay unresolved. Next: add a 'Date: YYYY-MM-DD' line.",
+    "detail": null
+   }
+  ]
+ }
+]
