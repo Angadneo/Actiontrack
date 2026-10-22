@@ -124,4 +124,7 @@ def test_sentinel_characters_in_input_do_not_break():
 def test_linear_time(line):
     t = time.perf_counter()
     clean_description(line)
-    assert time.perf_counter() - t < 3.0
+    # Generous wall-clock bound (observed ~0.1-3.4 s depending on machine load, e.g. several test runs in
+    # parallel): quadratic behaviour on these 1M-character inputs would take minutes, so 20 s still
+    # detects it without being flaky on a loaded machine.
+    assert time.perf_counter() - t < 20.0

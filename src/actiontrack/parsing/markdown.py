@@ -449,6 +449,12 @@ def _indent_width(prefix: str) -> int:
     return width
 
 
+def line_indent_width(text: str) -> int:
+    """Indent width of ``text`` (tab = next multiple of 4), same rule as ``ListLine.indent_width``."""
+    stripped = text.lstrip(" \t")
+    return _indent_width(text[: len(text) - len(stripped)])
+
+
 def classify_list_line(text: str) -> ListLine | None:
     """Classify one line as a (checkbox) list item, or None (see module docstring)."""
     m = _LIST_RE.fullmatch(text)
