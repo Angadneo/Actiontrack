@@ -39,8 +39,16 @@ Section 3 - ``task_text`` (T-M2-19, spec §8.2, G-12, J-01, AC-01.19)
     character"): after deletion the FIRST character of the result is upper-cased
     with ``str.upper``; every other character is untouched.
 
-Section 4 - assembly (T-M2-15), Section 5 - analyzer adapter (T-M3-09):
-    added by later tasks.
+Section 4 - analyzer hooks (T-M2-15), Section 5 - due adapter (T-M3-09)
+    ``AnalyzerContext(meeting_date, date_order)``; ``ItemAnalysis(owner, due, owner_spans, due_spans)``;
+    ``ItemAnalyzer`` protocol ``analyze(description, ctx) -> ItemAnalysis`` (``description`` is the
+    full cleaned description, never ``raw_text``; spans index it); ``NullAnalyzer`` (all empty, hooks
+    stay ``None``); ``DueAnalyzer(owner_spans=NullOwnerSpans())`` fills ``due`` with a
+    ``dates.DueResult`` and returns owner spans from the provider plus every due/date span (M4 will
+    also fill ``owner``).  ``item_due_warnings(item, meeting_date, file)`` builds the item-level
+    ``W-DATE-NOT-DUE`` / ``W-DUE-BEFORE-MEETING`` warnings of a ``DueResult`` hook (the parsers emit
+    both, Appendix B; line = ``item.line_start``).  The assembly itself (``parse_document``) lives
+    in ``parsing/__init__.py`` because it needs ``meeting.py``, which imports this module.
 
 Design notes for section 1: everything is a single left-to-right scan or a
 linear-time regex (no nested quantifiers), so pathological one-million-character
@@ -63,8 +71,9 @@ from dataclasses import dataclass
 from itertools import islice
 from typing import Protocol
 
+from actiontrack import codes as _codes
 from actiontrack.domain import dates as _dates
-from actiontrack.domain.models import ParsedItem, ParseWarning, TextSpan
+from actiontrack.domain.models import ParsedItem, ParseWarning, TextSpan, parse_message
 from actiontrack.parsing import markdown as _md
 
 # --------------------------------------------------------------------------
@@ -608,3 +617,95 @@ def derive_task_text(description: str, spans: Iterable[TextSpan] = ()) -> str:
         return description
     result = result[0].upper() + result[1:]
     return unicodedata.normalize("NFC", result)
+
+
+# --------------------------------------------------------------------------
+# Section 4 - analyzer hooks (T-M2-15)
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class AnalyzerContext:
+    """What an analyzer may know about the file: the meeting date (or None) and ``date_order``."""
+
+    meeting_date: _dates.MeetingDate | None
+    date_order: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ItemAnalysis:
+    """Analyzer output for one description; ``owner`` / ``due`` go to ``ParsedItem.owner_hook`` / ``due_hook``."""
+
+    owner: object | None = None
+    due: object | None = None
+    owner_spans: Sequence[TextSpan] = ()
+    due_spans: Sequence[TextSpan] = ()
+
+
+class ItemAnalyzer(Protocol):
+    """M3/M4 hook: analyse the full cleaned ``description`` of one item (spans index it, G-12)."""
+
+    def analyze(self, description: str, ctx: AnalyzerContext) -> ItemAnalysis: ...
+
+
+class NullAnalyzer:
+    """No analysis: hooks stay ``None``, ``task_text`` is the description (first letter upper-cased)."""
+
+    def analyze(self, description: str, ctx: AnalyzerContext) -> ItemAnalysis:
+        return ItemAnalysis()
+
+
+# --------------------------------------------------------------------------
+# Section 5 - due analyzer adapter (T-M3-09)
+# --------------------------------------------------------------------------
+
+
+class DueAnalyzer:
+    """Real due analyzer: ``dates.resolve_due`` against the meeting date; owner spans from a provider."""
+
+    def __init__(self, owner_spans: OwnerSpanProvider | None = None) -> None:
+        self._owner_spans: OwnerSpanProvider = owner_spans if owner_spans is not None else NullOwnerSpans()
+
+    def analyze(self, description: str, ctx: AnalyzerContext) -> ItemAnalysis:
+        due = _dates.resolve_due(description, ctx.meeting_date, ctx.date_order)
+        return ItemAnalysis(
+            owner=None,
+            due=due,
+            owner_spans=tuple(self._owner_spans.owner_spans(description)),
+            due_spans=due.spans,
+        )
+
+
+def item_due_warnings(item: ParsedItem, meeting_date: _dates.MeetingDate | None, file: str = "") -> list[ParseWarning]:
+    """Item-level due warnings of a ``DueResult`` in ``item.due_hook`` (empty for any other hook).
+
+    ``W-DATE-NOT-DUE`` (detail = the not-due raw text) and ``W-DUE-BEFORE-MEETING`` (detail =
+    ``"<due> < <meeting>"``), both at ``item.line_start``.
+    """
+    due = item.due_hook
+    if not isinstance(due, _dates.DueResult):
+        return []
+    name = file or "<file>"
+    out: list[ParseWarning] = []
+    for code in due.warnings:
+        if code == _codes.W_DATE_NOT_DUE:
+            out.append(
+                ParseWarning(
+                    code,
+                    item.line_start,
+                    parse_message(code, name, item.line_start, phrase=due.due_raw_other),
+                    detail=due.due_raw_other,
+                )
+            )
+        elif code == _codes.W_DUE_BEFORE_MEETING and due.due_date is not None and meeting_date is not None:
+            out.append(
+                ParseWarning(
+                    code,
+                    item.line_start,
+                    parse_message(
+                        code, name, item.line_start, due=due.due_date.isoformat(), meeting=meeting_date.isoformat()
+                    ),
+                    detail=f"{due.due_date.isoformat()} < {meeting_date.isoformat()}",
+                )
+            )
+    return out

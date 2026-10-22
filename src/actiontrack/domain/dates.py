@@ -12,6 +12,7 @@ Sections (later M3 tasks append to the matching section, in this order)
 5. Phrase recogniser (T-M3-03)      ``classify_phrase`` -> ``Phrase`` AST (no date arithmetic)
 6. Resolver (T-M3-06/07/08)         ``resolve_phrase`` -> ``Resolution`` (pure; needs meeting date M)
 7. Phrase locator (T-M3-04/05)      ``locate`` -> ``Located`` spans over the cleaned ``description``
+8. Item due (T-M3-09)               ``resolve_due`` -> ``DueResult``; ``format_due`` (display, spec 9.5)
 
 Public API (sections 1-4)
 -------------------------
@@ -55,6 +56,12 @@ Public API (sections 5-7)
 ``locate(description, date_order=None) -> list[Located]``     sorted by ``start``.
 ``distinct_due_phrases(located)`` (due/event roles, one per normalised raw, in order),
 ``not_due_phrases(located)``, ``has_multiple_dates(located)``.
+
+Public API (section 8)
+----------------------
+``resolve_due(description, meeting_date, date_order=None) -> DueResult(due_raw, due_date, due_confidence,
+due_rule, due_reason, due_raw_other, raws, spans, warnings)``  (see ``DueResult``);
+``format_due(result) -> str``  ``2026-09-04`` / ``?(raw excerpt)`` / ``-``.
 """
 
 from __future__ import annotations
@@ -78,6 +85,7 @@ __all__ = [
     "parse_literal", "match_literal_at",
     "PHRASE_KINDS", "Phrase", "classify_phrase", "Resolution", "resolve_phrase", "resolve_text",
     "Located", "locate", "distinct_due_phrases", "not_due_phrases", "has_multiple_dates",
+    "DueResult", "resolve_due", "format_due", "MeetingDate",
 ]
 
 # =========================================================================== 1. tables
@@ -856,3 +864,78 @@ def not_due_phrases(located: list[Located]) -> list[Located]:
 def has_multiple_dates(located: list[Located]) -> bool:
     """Two or more *different* due/event phrases (different normalised raw), spec 9.2 (B-3 default)."""
     return len(distinct_due_phrases(located)) >= 2
+
+
+# ================================================================== 8. resolve_due (T-M3-09)
+MeetingDate = _dt.date  # alias so pure parsing modules can annotate without importing ``datetime``
+
+
+@dataclass(frozen=True)
+class DueResult:
+    """Due provenance of one item description (spec 9.5, 7.2). Pure function result.
+
+    ``due_raw``: the single due/event phrase without introducer (time words kept); for
+    ``multiple_dates`` the distinct raws joined by ``"; "``; ``None`` when there is no due phrase.
+    ``due_confidence``: explicit/relative/inferred/unresolved/none. ``due_rule`` is a
+    ``codes.DUE_RULES`` member for a resolved date, ``None`` otherwise. ``due_reason`` is set only
+    when unresolved. ``due_raw_other``: non-due phrases (``from 9 Oct``) joined by ``"; "``.
+    ``raws``: every distinct due/event raw in text order. ``spans``: introducer, separator and
+    phrase spans of every located phrase (due, event, not-due), offsets into ``description``.
+    ``warnings``: ``W-*`` codes (``W-DATE-NOT-DUE``, ``W-DUE-BEFORE-MEETING``), sorted.
+    """
+
+    due_raw: str | None
+    due_date: _dt.date | None
+    due_confidence: Confidence
+    due_rule: Rule | None
+    due_reason: Reason | None
+    due_raw_other: str | None = None
+    raws: tuple[str, ...] = ()
+    spans: tuple[TextSpan, ...] = ()
+    warnings: tuple[str, ...] = ()
+
+
+def resolve_due(description: str, meeting_date: _dt.date | None,
+                date_order: str | None = None) -> DueResult:
+    """Locate and resolve the due date of a cleaned ``description`` (pure; no clock, BR-05).
+
+    ``locate`` -> ``distinct_due_phrases``: two or more different phrases give unresolved
+    ``multiple_dates`` (all raws kept); none gives ``none`` (``due_raw`` ``None``); one is resolved
+    with ``resolve_phrase`` (``event=True`` for an ``event`` role). Not-due phrases only fill
+    ``due_raw_other`` and add ``W-DATE-NOT-DUE`` (also next to a due phrase).
+    """
+    located = locate(description, date_order)
+    distinct = distinct_due_phrases(located)
+    others = not_due_phrases(located)
+    spans: list[TextSpan] = []
+    for f in located:
+        if f.introducer_span is not None:
+            spans.append(f.introducer_span)
+        if f.separator_span is not None:
+            spans.append(f.separator_span)
+        spans.append(TextSpan(f.start, f.end))
+    raws = tuple(f.raw for f in distinct)
+    other = "; ".join(f.raw for f in others) or None
+    extra = (_codes.W_DATE_NOT_DUE,) if others else ()
+    common = {"due_raw_other": other, "raws": raws, "spans": tuple(spans)}
+    if len(distinct) >= 2:
+        return DueResult("; ".join(raws), None, Confidence.UNRESOLVED, None, Reason("multiple_dates"),
+                         warnings=tuple(sorted(extra)), **common)
+    if not distinct:
+        return DueResult(None, None, Confidence.NONE, None, None, warnings=tuple(sorted(extra)), **common)
+    loc = distinct[0]
+    res = resolve_phrase(loc.phrase, meeting_date, date_order, event=(loc.role == "event"))
+    return DueResult(loc.raw, res.date, res.confidence, res.rule, res.reason,
+                     warnings=tuple(sorted((*res.warnings, *extra))), **common)
+
+
+def format_due(result: DueResult, max_excerpt: int = 24) -> str:
+    """Table display of a due result (spec 9.5): date, ``?(raw excerpt)`` if unresolved, ``-`` if none."""
+    if result.due_date is not None:
+        return result.due_date.isoformat()
+    if result.due_confidence == Confidence.UNRESOLVED:
+        raw = result.due_raw or ""
+        if len(raw) > max_excerpt:
+            raw = raw[: max_excerpt - 1] + "\u2026"
+        return f"?({raw})"
+    return "-"

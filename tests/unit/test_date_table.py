@@ -5,8 +5,7 @@ every expected date was re-verified against the real 2026 calendar. Each row has
 
 * ``phrase`` - ``resolve_text(text, M, date_order)`` (= ``classify_phrase`` + ``resolve_phrase``).
 * ``item``   - a whole task description: ``locate`` -> ``distinct_due_phrases`` / ``not_due_phrases`` ->
-  ``resolve_phrase`` (``event=True`` for an ``event`` role). ``evaluate_item`` below is the stand-in
-  for ``resolve_due`` (T-M3-09): when that lands, switch ``evaluate_item`` to call it (rows unchanged).
+  ``resolve_phrase`` (all inside ``resolve_due``); ``evaluate_item`` below calls ``resolve_due``.
 
 Results are pure functions of (text, meeting date, date_order): BR-05 is guarded by a source scan,
 a run with every wall-clock function patched to raise, and a subprocess run under two TZ values.
@@ -28,10 +27,7 @@ import pytest
 from actiontrack import codes
 from actiontrack.domain import dates as dates_mod
 from actiontrack.domain.dates import (
-    distinct_due_phrases,
-    locate,
-    not_due_phrases,
-    resolve_phrase,
+    resolve_due,
     resolve_text,
 )
 
@@ -49,19 +45,10 @@ def _val(x):
 
 
 def evaluate_item(text: str, m: date | None, order: str | None) -> dict:
-    """Stand-in for ``resolve_due`` over a full description (see module docstring)."""
-    located = locate(text, order)
-    distinct = distinct_due_phrases(located)
-    extra = [codes.W_DATE_NOT_DUE] if not_due_phrases(located) else []
-    if len(distinct) >= 2:
-        return {"date": None, "confidence": "unresolved", "rule": None, "reason": "multiple_dates",
-                "warnings": sorted(extra)}
-    if not distinct:
-        return {"date": None, "confidence": "none", "rule": None, "reason": None, "warnings": sorted(extra)}
-    loc = distinct[0]
-    res = resolve_phrase(loc.phrase, m, order, event=(loc.role == "event"))
-    return {"date": res.date, "confidence": _val(res.confidence), "rule": _val(res.rule),
-            "reason": _val(res.reason), "warnings": sorted(list(res.warnings) + extra)}
+    """``resolve_due`` over a full description, flattened for comparison with a table row."""
+    r = resolve_due(text, m, order)
+    return {"date": r.due_date, "confidence": _val(r.due_confidence), "rule": _val(r.due_rule),
+            "reason": _val(r.due_reason), "warnings": sorted(r.warnings)}
 
 
 def evaluate(row: dict) -> dict:
