@@ -1,0 +1,27 @@
+actiontrack list - List action items, optionally filtered.
+
+Synopsis:
+  actiontrack list [--owner <full name|id|email>] [--status open|done|overdue|all]
+                   [--due-before <date>] [--include-ambiguous] [--ambiguous] [--wide]
+                   [--format table|json]
+
+Options:
+  --owner <full name|id|email>    Only this person's items (a bare shared first name is rejected).
+  --status open|done|overdue|all  Which items to show (default: open).
+  --due-before <date>             Only items due before this date.
+  --include-ambiguous             With --owner: also show items whose owner may be this person.
+  --ambiguous                     Only items whose owner is ambiguous (not with --owner).
+  --wide                          Show wider columns.
+  --format table|json             Output format (default: table).
+  Global options (--db, --config, --today, --format, --quiet, --verbose, --log-file,
+  --no-color) may also be given here; run "actiontrack --help" for them.
+
+Exit codes:
+  0  Success (data-quality warnings alone do not change the code)
+  2  Usage error / invalid argument
+  3  Not found (item ID, owner)
+  4  Environment error (folder, database, config, handoff file or log file unusable)
+  6  Ambiguous owner (the query matches two or more people)
+
+Example:
+  actiontrack list --owner "Priya Shah" --status overdue

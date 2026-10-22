@@ -1,0 +1,11 @@
+# Source and docs: normalise to LF in the repo and on checkout.
+* text=auto eol=lf
+
+# Sample notes and test fixtures are byte-exact test inputs (one has CRLF line endings, one is
+# binary, hashes are asserted in tests): never let git rewrite line endings or treat them as text.
+samples/** -text
+notes/** -text
+tests/fixtures/notes/** -text
+
+# Golden files are compared byte-for-byte.
+tests/golden/** text eol=lf

@@ -1,0 +1,19 @@
+actiontrack gmail-login - One-time sign-in for the direct Google channel. With the default handoff
+channel it prints that no sign-in is needed. It never reads, sends or changes mail.
+
+Synopsis:
+  actiontrack gmail-login [--logout] [global options]
+
+Options:
+  --logout             Delete the stored sign-in token.
+  --format table|json  Accepted and ignored.
+  Global options (--db, --config, --today, --format, --quiet, --verbose, --log-file,
+  --no-color) may also be given here; run "actiontrack --help" for them.
+
+Exit codes:
+  0  Success (data-quality warnings alone do not change the code)
+  4  Environment error (folder, database, config, handoff file or log file unusable)
+  8  Gmail draft not created or status unknown
+
+Example:
+  actiontrack gmail-login

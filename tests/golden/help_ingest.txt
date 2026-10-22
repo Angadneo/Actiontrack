@@ -1,0 +1,22 @@
+actiontrack ingest - Read a folder of Markdown meeting notes and extract action items.
+Notes are only read, never changed.
+
+Synopsis:
+  actiontrack ingest <folder> [--no-recursive] [--dry-run] [global options]
+
+Options:
+  <folder>             Folder of Markdown (.md) notes.
+  --no-recursive       Scan only the top level (subfolders are scanned by default).
+  --dry-run            Parse and report, but write nothing.
+  --format table|json  Report format (default: table).
+  Global options (--db, --config, --today, --format, --quiet, --verbose, --log-file,
+  --no-color) may also be given here; run "actiontrack --help" for them.
+
+Exit codes:
+  0  Success (data-quality warnings alone do not change the code)
+  2  Usage error / invalid argument
+  4  Environment error (folder, database, config, handoff file or log file unusable)
+  5  ingest finished but at least one file failed to parse or read
+
+Example:
+  actiontrack ingest "C:\notes\meetings" --dry-run

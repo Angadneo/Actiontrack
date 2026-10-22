@@ -1,0 +1,19 @@
+actiontrack done - Mark an action item as done.
+
+Synopsis:
+  actiontrack done <id> [--format table|json]
+
+Options:
+  <id>                 Item ID: AT-0012, 12 or at-12 (case-insensitive).
+  --format table|json  Output format (default: table).
+  Global options (--db, --config, --today, --format, --quiet, --verbose, --log-file,
+  --no-color) may also be given here; run "actiontrack --help" for them.
+
+Exit codes:
+  0  Success (data-quality warnings alone do not change the code)
+  2  Usage error / invalid argument
+  3  Not found (item ID, owner)
+  4  Environment error (folder, database, config, handoff file or log file unusable)
+
+Example:
+  actiontrack done AT-0012

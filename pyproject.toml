@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "actiontrack"
+dynamic = ["version"]
+requires-python = ">=3.12"
+description = "Local CLI that ingests Markdown meeting notes and tracks action items."
+dependencies = ["tzdata"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+actiontrack = "actiontrack.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "actiontrack.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+actiontrack = ["store/schema.sql", "store/migrations/*.sql"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "ac(*ids): acceptance criteria proven by this test, e.g. ac('AC-01.11')",
+    "sc(*ids): scenarios covered by this test, e.g. sc('SC-37')",
+    "network: opt out of the socket guard (the release gate refuses to run these)",
+]

@@ -1,0 +1,42 @@
+# actiontrack runtime data (database, lock, handoff files hold email bodies, logs)
+.actiontrack/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.lock
+*.bak
+actiontrack.log
+
+# Local config that may hold real email addresses (commit actiontrack.example.toml instead)
+actiontrack.toml
+
+# OAuth tokens / secrets (phase 2) - never commit
+*.token.json
+gmail_token.json
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Claude Code per-user local settings
+.claude/settings.local.json

@@ -1,0 +1,4 @@
+ID       STATUS   DUE         OWNER                   TASK                                   SOURCE                          FLAGS
+AT-0004  overdue  2026-10-16  Priya Shah              Send the revised quote                 2026-10-14-sprint.md:18         
+AT-0009  open     2026-10-23  Rahul Verma             Complete the API review                2026-10-14-sprint.md:21 (+1)    CR
+AT-0006  open     ?(next wk)  ?Priya (Nair | Shah)    Draft onboarding doc                   2026-10-14-sprint.md:24         OA DU

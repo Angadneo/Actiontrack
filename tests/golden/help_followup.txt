@@ -1,0 +1,43 @@
+actiontrack followup - Prepare a follow-up email with one owner's open items as a Gmail draft.
+Drafts are never sent: review and send them yourself from Gmail Drafts.
+
+Synopsis:
+  actiontrack followup <full name|id|email> [--to <email>] [--include-ambiguous]
+                       [--dry-run] [--yes] [--force] [--format table|json]
+  actiontrack followup --record-draft <handoff-file> [--draft-id <id>]
+                       [--status created|failed]
+
+Options:
+  <full name|id|email>     The owner to write to (not given with --record-draft).
+  --to <email>             Recipient email address.
+  --include-ambiguous      Opt-in: add a separate section (up to 20 items) of ambiguous
+                           items that may be this person's; only task text and meeting
+                           are shown, co-owner names are omitted.
+  --dry-run                Show the preview only; create nothing.
+  --yes                    Answer the confirmation prompt (required without a terminal).
+  --force                  needed together with `--yes` to proceed past the repeat-draft warning
+                           without a TTY (FR-04.9).
+  --format table|json      Output format (default: table); JSON carries a status field.
+  --record-draft <file>    Second form: record the outcome of a prepared handoff file
+                           that the host session's Gmail connector handled.
+  --draft-id <id>          Draft id reported by the host (needed for --status created).
+  --status created|failed  Outcome to record (default: created; failed takes no --draft-id).
+  Global options (--db, --config, --today, --format, --quiet, --verbose, --log-file,
+  --no-color) may also be given here; run "actiontrack --help" for them.
+
+A prepared handoff exits 0 but prints "Draft NOT yet created in Gmail".
+Declining the confirmation exits 9 and creates nothing.
+
+Exit codes:
+  0  Success (data-quality warnings alone do not change the code)
+  2  Usage error / invalid argument
+  3  Not found (item ID, owner)
+  4  Environment error (folder, database, config, handoff file or log file unusable)
+  6  Ambiguous owner (the query matches two or more people)
+  7  followup precondition failed (for example no recipient email)
+  8  Gmail draft not created or status unknown
+  9  Cancelled by user (nothing was created)
+
+Example:
+  actiontrack followup "Priya Shah" --dry-run
+  actiontrack followup --record-draft ".actiontrack\handoff\file.json" --draft-id r-123

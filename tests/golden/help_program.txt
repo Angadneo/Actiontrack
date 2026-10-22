@@ -1,0 +1,46 @@
+actiontrack - extract action items from Markdown meeting notes, list and complete them,
+and prepare follow-up emails as Gmail drafts. It can never send email.
+
+Synopsis:
+  actiontrack [global options] <command> [args]
+  actiontrack <command> [args] [global options]
+
+Commands:
+  ingest       Read a folder of Markdown notes and extract action items
+  list         List and filter action items
+  done         Mark an action item as done
+  followup     Prepare a Gmail draft with one owner's open items (the draft is never sent)
+  gmail-login  Sign in for the direct Google channel (not needed for the handoff channel)
+
+Options:
+  Global options are accepted before or after the command; the last occurrence wins.
+  --db <path>          Database file (default: ./.actiontrack/actiontrack.db; env ACTIONTRACK_DB)
+  --config <path>      Config/roster file (default: ./actiontrack.toml if present;
+                       env ACTIONTRACK_CONFIG)
+  --today <YYYY-MM-DD> Override the current date (env ACTIONTRACK_TODAY)
+  --format table|json  Output format for ingest, list, done and followup (default: table)
+  --quiet              Errors and the final summary line only on stderr; never hides results
+  --verbose            Debug diagnostics, stack traces and personal names in logs
+                       (--quiet and --verbose together are a usage error)
+  --log-file <path>    Append diagnostics to this file (UTF-8); an unopenable file is exit 4
+  --no-color           Disable colour (also honours NO_COLOR)
+  --help               Show this help (after a command: help for that command)
+  --version            Print the version
+
+Result data goes to stdout; warnings, diagnostics and errors go to stderr.
+
+Exit codes:
+  0  Success (data-quality warnings alone do not change the code)
+  1  Unexpected internal error
+  2  Usage error / invalid argument
+  3  Not found (item ID, owner)
+  4  Environment error (folder, database, config, handoff file or log file unusable)
+  5  ingest finished but at least one file failed to parse or read
+  6  Ambiguous owner (the query matches two or more people)
+  7  followup precondition failed (for example no recipient email)
+  8  Gmail draft not created or status unknown
+  9  Cancelled by user (nothing was created)
+  A prepared followup handoff exits 0 but prints "Draft NOT yet created in Gmail".
+
+Example:
+  actiontrack --today 2026-10-22 list --status open --format json

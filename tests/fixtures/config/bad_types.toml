@@ -1,0 +1,5 @@
+[limits]
+max_file_bytes = "5MB"
+fuzzy_threshold = 1.5
+[owners]
+attendee_disambiguation = "false"
