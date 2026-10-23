@@ -61,12 +61,12 @@ D = ["due_differs"]
 CLUSTERS = {
     # --- Tier-1 merge (AC-07.12)
     "freeze invoice edits": (1, [2], []),
-    # --- 6 due_differs clusters (AC-07.13), final: two items + one link
+    # --- 4 due_differs clusters (AC-07.13), final: two items + one link (was 6: the two clusters whose LATER source is dateless now merge)
     "share updated wireframes": (2, [1, 1], D),
     "fix pagination bug": (2, [1, 1], D),
-    "review schema mapping doc": (2, [1, 1], D),
+    "review schema mapping doc": (1, [2], []),  # amended D-04: dateless later restatement merges
     "estimate sso work": (2, [1, 1], D),
-    "prepare renewal one pager": (2, [1, 1], D),
+    "prepare renewal one pager": (1, [2], []),  # amended D-04: dateless later restatement merges
     "collect 5 customer quotes landing page": (2, [1, 1], D),
     # --- 11 Tier-1b clusters (T-M5-10): 2-open clusters keep the pre-existing due_differs link between the two
     # open items; every [x] source is attached to the holder (the most recent matching item)
@@ -109,7 +109,7 @@ def test_only_identical_core_clusters_have_multiple_sources_and_links_are_due_di
     multi = {r["core_key"] for r in q(db, "SELECT core_key FROM item_source GROUP BY core_key HAVING count(*) > 1")}
     assert multi == set(CLUSTERS)
     assert Counter(r["reason"] for r in q(db, "SELECT reason FROM item_link WHERE kind = 'possible_duplicate'")) == {
-        "due_differs": 11
+        "due_differs": 9
     }
     assert q(db, "SELECT count(*) FROM item_link WHERE kind = 'completed_by'")[0][0] == 5
 
@@ -117,13 +117,13 @@ def test_only_identical_core_clusters_have_multiple_sources_and_links_are_due_di
 def test_totals_and_symmetric_storage(sample):
     db, res, captured, _ = sample
     assert q(db, "SELECT count(*) FROM item_source")[0][0] == 117
-    assert q(db, "SELECT count(*) FROM action_item")[0][0] == 105
-    assert res.counters.items_merged == 12 and res.counters.possible_duplicates == 11  # freeze + 11 Tier-1b
+    assert q(db, "SELECT count(*) FROM action_item")[0][0] == 103
+    assert res.counters.items_merged == 14 and res.counters.possible_duplicates == 9  # freeze + 2 dateless restatements + 11 Tier-1b
     assert all(
         r["from_item_id"] < r["to_item_id"] for r in q(db, "SELECT * FROM item_link WHERE kind = 'possible_duplicate'")
     )
     # links are reported through MatchResult, once, naming the OTHER (existing, lower-id) item
-    assert sum(r.possible_duplicates for r in captured) == 11
+    assert sum(r.possible_duplicates for r in captured) == 9
     for r in captured:
         assert r.possible_duplicates == len(r.links)
         assert all(other < r.item_id for other, _reason in r.links)  # new item 9 vs existing 3 stored as (3, 9)
@@ -157,7 +157,7 @@ def test_rerun_over_unchanged_folder_adds_no_links(sample, tmp_path):
     before = q(copy, "SELECT count(*) FROM item_link")[0][0]
     res = ingest(copy, folder)
     assert res.counters.files_unchanged == 33
-    assert q(copy, "SELECT count(*) FROM item_link")[0][0] == before == 16  # 11 possible_duplicate + 5 completed_by
+    assert q(copy, "SELECT count(*) FROM item_link")[0][0] == before == 14  # 9 possible_duplicate + 5 completed_by
 
 
 def test_insert_link_is_idempotent_and_symmetric(tmp_path):

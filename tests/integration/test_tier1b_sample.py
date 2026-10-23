@@ -136,9 +136,9 @@ def test_quote_cluster_09_08_holds_evidence_09_01_is_inferred(sample):
 def test_sample_totals_eleven_holders_five_inferred_nothing_lost(sample):
     db, res, _ = sample
     assert q(db, "SELECT count(*) FROM item_source")[0][0] == 117
-    assert q(db, "SELECT count(*) FROM action_item")[0][0] == 105
+    assert q(db, "SELECT count(*) FROM action_item")[0][0] == 103
     assert dict((r[0], r[1]) for r in q(db, "SELECT status, count(*) FROM action_item GROUP BY status")) == {
-        "open": 87, "done": 18}  # 13 [x] sources: 11 Tier-1b evidence + 2 standalone; + 5 inferred
+        "open": 85, "done": 18}  # 13 [x] sources: 11 Tier-1b evidence + 2 standalone; + 5 inferred
     done = q(db, "SELECT * FROM action_item WHERE status = 'done'")
     assert all(r["completion_origin"] == "note" and r["completed_at"] is None for r in done)
     holders = {r["completion_evidence_source_id"] for r in done if r["completion_evidence_source_id"]}
@@ -149,8 +149,8 @@ def test_sample_totals_eleven_holders_five_inferred_nothing_lost(sample):
         done_source(db, core)["item_id"] for core in CLUSTERS
     }
     assert len(tier1b_holders) == 11
-    assert q(db, "SELECT count(*) FROM item_link WHERE kind = 'possible_duplicate'")[0][0] == 11
-    assert res.counters.items_new == 105 and res.counters.items_merged == 12
+    assert q(db, "SELECT count(*) FROM item_link WHERE kind = 'possible_duplicate'")[0][0] == 9
+    assert res.counters.items_new == 103 and res.counters.items_merged == 14
     assert res.counters.already_done_in_note == 13
     # no source row was deleted and every item keeps >= 1 source
     assert q(db, "SELECT count(*) FROM item_source WHERE present = 0")[0][0] == 0
@@ -158,11 +158,16 @@ def test_sample_totals_eleven_holders_five_inferred_nothing_lost(sample):
 
 
 @pytest.mark.ac("AC-07.12", "AC-07.13")
-def test_freeze_merge_and_six_due_differs_clusters_unchanged(sample):
+def test_freeze_merge_and_four_due_differs_clusters_unchanged(sample):
     db = sample[0]
     assert len(cluster_items(db, "freeze invoice edits")) == 1
-    for core in ("share updated wireframes", "fix pagination bug", "review schema mapping doc", "estimate sso work",
-                 "prepare renewal one pager", "collect 5 customer quotes landing page"):
+    # amended D-04: the two clusters whose later source is dateless (schema mapping doc, renewal one-pager)
+    # merge into one open item; the four others (dateless source EARLIER, or both dated) stay two items
+    for core in ("review schema mapping doc", "prepare renewal one pager"):
+        (item,) = cluster_items(db, core)
+        assert item["status"] == "open" and item["due_confidence"] != "none"
+    for core in ("share updated wireframes", "fix pagination bug", "estimate sso work",
+                 "collect 5 customer quotes landing page"):
         items = cluster_items(db, core)
         assert len(items) == 2 and all(i["status"] == "open" for i in items)
 
@@ -269,6 +274,27 @@ def test_manual_done_item_is_never_matched_or_altered(tmp_path):
     before = tuple(q(db, "SELECT * FROM action_item WHERE id = 1")[0])
     d.close()
     write_note(folder, "2026-09-15-b.md", note("2026-09-15", f"- [x] {LINE}"))
+    ingest(db, folder)
+    assert tuple(q(db, "SELECT * FROM action_item WHERE id = 1")[0]) == before
+    # amended D-04: the dateless [x] note is a later restatement of the dated item, so it is a Tier-1 merge
+    # (done + done); the manual-done item row itself is untouched (asserted above), it only gains a source
+    assert statuses(db) == ["done"]
+    assert q(db, "SELECT count(*) FROM item_link")[0][0] == 0
+    assert q(db, "SELECT count(*) FROM item_source WHERE item_id = 1")[0][0] == 2
+
+
+def test_manual_done_item_is_not_absorbed_by_a_note_with_another_due(tmp_path):
+    """The original intent of the test above, with a DIFFERENT due so that Tier-1 / Tier-1b do not apply."""
+    folder = tmp_path / "notes"
+    write_note(folder, "2026-09-01-a.md", note("2026-09-01", f"- [ ] {LINE} by 2026-09-04"))
+    db = tmp_path / "t.db"
+    ingest(db, folder)
+    d, repo = open_repo(db)
+    with d.transaction():
+        repo.set_manual_done(1, "2026-09-02T10:00:00Z")
+    before = tuple(q(db, "SELECT * FROM action_item WHERE id = 1")[0])
+    d.close()
+    write_note(folder, "2026-09-15-b.md", note("2026-09-15", f"- [x] {LINE} by 2026-09-20"))
     ingest(db, folder)
     assert tuple(q(db, "SELECT * FROM action_item WHERE id = 1")[0]) == before
     assert statuses(db) == ["done", "done"]  # the [x] note is its own item (due differs: not Tier-1, not Tier-1b)

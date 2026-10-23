@@ -66,6 +66,63 @@ def test_negative_table():
         assert not m.is_tier1(n, i, window_days=WIN), label
 
 
+DUE = date(2026, 10, 9)
+
+
+def test_dateless_later_restatement_merges():
+    """Amended D-04: a later dateless restatement of an item with a resolved due is Tier-1."""
+    for conf in ("explicit", "relative", "inferred"):
+        assert m.tier1_failures(new(), item(due=DUE, conf=conf), window_days=WIN) == (), conf
+    # same meeting date counts as "not earlier"
+    assert m.is_tier1(new(d=D0), item(due=DUE, conf="explicit"), window_days=WIN)
+    assert m.due_condition_holds(new(), item(due=DUE, conf="explicit"))
+
+
+def test_dateless_earlier_restatement_stays_separate():
+    # the dateless source is the EARLIER one: not a later restatement
+    assert 4 in m.tier1_failures(new(d=D0 - timedelta(days=3)), item(due=DUE, conf="explicit"), window_days=WIN)
+
+
+def test_reverse_case_existing_dateless_new_dated_stays_separate():
+    assert m.tier1_failures(new(due=DUE, conf="explicit"), item(), window_days=WIN) == (4,)
+
+
+def test_unresolved_due_restatement_stays_separate():
+    assert 4 in m.tier1_failures(new(conf="unresolved"), item(due=DUE, conf="explicit"), window_days=WIN)
+    # an existing item whose canonical due is unresolved is not a "resolved date" either
+    assert 4 in m.tier1_failures(new(), item(conf="unresolved"), window_days=WIN)
+
+
+def test_both_dated_different_stays_separate():
+    n, i = new(due=date(2026, 10, 12), conf="explicit"), item(due=DUE, conf="explicit")
+    assert m.tier1_failures(n, i, window_days=WIN) == (4,)
+
+
+def test_dateless_restatement_other_conditions_still_block():
+    it = item(due=DUE, conf="explicit")
+    assert m.is_tier1(new(), it, window_days=WIN)
+    assert 2 in m.tier1_failures(new(core=("send", "quote")), item(core=("send", "quote"), due=DUE, conf="explicit"), window_days=WIN)
+    rec = ("send", "weekly", "status", "report")
+    assert 2 in m.tier1_failures(new(core=rec), item(core=rec, due=DUE, conf="explicit"), window_days=WIN)
+    assert m.tier1_failures(new(file_id=1), it, window_days=WIN) == (6,)  # same file
+    assert m.tier1_failures(new(d=D0 + timedelta(days=61)), it, window_days=WIN) == (6,)  # window
+    assert m.tier1_failures(new(owners=(PRIYA_N,)), it, window_days=WIN) == (3,)
+    assert m.tier1_failures(new(owners=(AMBIG,)), it, window_days=WIN) == (3,)
+    assert m.tier1_failures(new(status="open"), item(due=DUE, conf="explicit", status="done"), window_days=WIN) == (5,)
+    # unknown meeting dates: the window rule keeps failing, and the restatement cannot be shown to be later
+    assert set(m.tier1_failures(new(d=None), it, window_days=WIN)) == {4, 6}
+
+
+def test_dateless_restatement_is_not_a_due_differs_link_reason():
+    it = item(due=DUE, conf="explicit")
+    # same-file restatement: due is no longer what differs
+    reasons = m.link_reasons(new(file_id=1), it, window_days=WIN, fuzzy_threshold=0.8)
+    assert "due_differs" not in {r.value for r in reasons}
+    assert m.classify_pair(new(file_id=1), it, window_days=WIN, fuzzy_threshold=0.8).value == "same_file"
+    # reverse case keeps due_differs
+    assert m.classify_pair(new(due=DUE, conf="explicit"), item(), window_days=WIN, fuzzy_threshold=0.8).value == "due_differs"
+
+
 def test_window_boundary_60_inclusive_both_directions():
     it = item()
     assert m.is_tier1(new(d=D0 + timedelta(days=60)), it, window_days=WIN)

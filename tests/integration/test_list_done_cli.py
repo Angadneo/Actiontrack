@@ -60,9 +60,9 @@ def test_default_list_is_the_open_items_table(sample_db):
     rc, out, err = invoke(sample_db, "list")
     assert rc == 0
     lines = out.split("\n")
-    assert lines[0] == f"As of {TODAY} (tz Asia/Kolkata) — 87 items"
+    assert lines[0] == f"As of {TODAY} (tz Asia/Kolkata) — 85 items"
     assert lines[1].split() == ["ID", "STATUS", "DUE", "OWNER", "TASK", "SOURCE", "FLAGS"]
-    assert len(lines) - 3 == 87 and lines[-1] == ""  # header + columns + 87 rows + final newline
+    assert len(lines) - 3 == 85 and lines[-1] == ""  # header + columns + 85 rows + final newline
     assert max(len(line) for line in lines[1:]) <= 120
     statuses = {line.split()[1] for line in lines[2:-1]}
     assert statuses == {"open", "overdue"}
@@ -73,7 +73,7 @@ def test_default_list_is_the_open_items_table(sample_db):
 
 
 def test_status_filters_and_counts(sample_db):
-    assert len(items_json(sample_db, "--status", "all")["items"]) == 105
+    assert len(items_json(sample_db, "--status", "all")["items"]) == 103
     assert len(items_json(sample_db, "--status", "done")["items"]) == 18
     overdue = items_json(sample_db, "--status", "overdue")["items"]
     assert overdue and all(i["display_status"] == "overdue" and i["status"] == "open" for i in overdue)
@@ -153,7 +153,7 @@ def test_missing_database_exits_3_and_is_not_created(tmp_path):
 def test_json_envelope_and_item_fields(sample_db):
     data = items_json(sample_db)
     assert list(data) == ["as_of", "timezone", "items"] and data["as_of"] == TODAY
-    assert data["timezone"] == "Asia/Kolkata" and len(data["items"]) == 87
+    assert data["timezone"] == "Asia/Kolkata" and len(data["items"]) == 85
     item = data["items"][0]
     for key in ("id", "status", "display_status", "due_date", "task_text", "owners", "sources", "flags", "links"):
         assert key in item

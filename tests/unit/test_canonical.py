@@ -10,6 +10,7 @@ import pytest
 from actiontrack.domain.canonical import (
     OwnerView,
     SourceView,
+    due_source,
     earliest_source,
     latest_source,
     select_canonical,
@@ -53,6 +54,44 @@ def test_description_earliest_due_owner_status_latest_and_present_toggle():
     assert c.description == "desc-1"
     # restored: switches back
     assert select_canonical([s1, s2]).due_date == date(2026, 10, 9)
+
+
+def _dated(sid, rel, d, due, **kw):
+    return sv(sid, rel, 1, d, due_raw=due.isoformat(), due_date=due, due_confidence="explicit",
+              due_rule="text_date", due_reason=None, **kw)
+
+
+def test_later_dateless_source_does_not_erase_due():
+    s1 = _dated(1, "a.md", "2026-09-28", date(2026, 10, 2), owners=(KARAN,))
+    s2 = sv(2, "b.md", 1, "2026-10-14", owners=(ANITA,))  # dateless restatement
+    c = select_canonical([s1, s2])
+    assert c.due_date == date(2026, 10, 2) and c.due_confidence == "explicit"
+    assert c.due_raw == "2026-10-02" and c.due_rule == "text_date"
+    # everything else still follows the latest / earliest present source
+    assert c.owners == (ANITA,) and c.driver_source_id == 2 and c.description_source_id == 1
+    # the dated source going absent: the dateless one is all that is left
+    gone = dataclasses.replace(s1, present=False)
+    assert select_canonical([gone, s2]).due_date is None
+
+
+def test_due_follows_latest_source_that_has_a_due():
+    s1 = _dated(1, "a.md", "2026-09-01", date(2026, 9, 5))
+    s2 = _dated(2, "b.md", "2026-09-10", date(2026, 9, 15))
+    s3 = sv(3, "c.md", 1, "2026-09-20")
+    c = select_canonical([s1, s2, s3])
+    assert c.due_date == date(2026, 9, 15) and due_source([s1, s2, s3]).source_id == 2
+    # an unresolved due counts as "has a due" (confidence != none)
+    s4 = sv(4, "d.md", 1, "2026-09-30", due_raw="?(next week)", due_confidence="unresolved")
+    c = select_canonical([s1, s2, s3, s4])
+    assert c.due_date is None and c.due_confidence == "unresolved" and c.due_raw == "?(next week)"
+
+
+def test_all_dateless_follows_latest_source_as_before():
+    s1 = sv(1, "a.md", 1, "2026-09-01")
+    s2 = sv(2, "b.md", 1, "2026-09-10")
+    c = select_canonical([s1, s2])
+    assert c.due_date is None and c.due_confidence == "none"
+    assert due_source([s1, s2]).source_id == 2
 
 
 def test_same_date_orders_by_ordinal_path_then_line():

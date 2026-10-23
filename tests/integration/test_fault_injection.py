@@ -122,7 +122,7 @@ def test_kill_after_file_k_then_rerun_equals_an_uninterrupted_run(sample, tmp_pa
     assert rerun.counters.invariant_holds() and rerun.exit_code == 5  # scratch.md still fails
     assert_clean(db)
     assert dump_masked(db) == baseline  # same final business state, ids included
-    assert q(db, "SELECT count(*) FROM action_item")[0][0] == 105  # no duplicate items
+    assert q(db, "SELECT count(*) FROM action_item")[0][0] == 103  # no duplicate items
     assert q(db, "SELECT count(*) FROM item_source")[0][0] == 117
 
 

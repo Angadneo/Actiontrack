@@ -281,9 +281,11 @@ def test_edit_of_the_earliest_source_updates_the_canonical_description(tmp_path)
 @pytest.mark.ac("AC-07.16")
 def test_checkbox_marked_done_in_a_note_completes_the_item(sample):
     db, folder, _ = sample
-    it = item_by_text(db, "Rahul to review the schema mapping")
+    # (not the schema-mapping item: since amended D-04 it is merged with the later 09-17 restatement, whose
+    # own [ ] is the latest present source, so ticking the 09-03 copy alone does not complete it)
+    it = item_by_text(db, "Priya to draft the test plan")
     assert it["status"] == "open"
-    edit(folder / BILLING, "- [ ] Rahul to review", "- [x] Rahul to review")
+    edit(folder / BILLING, "- [ ] Priya to draft", "- [x] Priya to draft")
     res = ingest(db, folder)
     row = q(db, "SELECT * FROM action_item WHERE id = ?", (it["id"],))[0]
     assert row["status"] == "done" and row["completion_origin"] == "note" and row["completed_at"] is None

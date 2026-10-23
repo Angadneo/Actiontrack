@@ -24,17 +24,17 @@
   },
   "items": {
     "scope": "run",
-    "new": 105,
+    "new": 103,
     "updated": 0,
     "unchanged": 0,
-    "merged_duplicates": 12,
-    "possible_duplicates": 11,
+    "merged_duplicates": 14,
+    "possible_duplicates": 9,
     "already_done_in_note": 13,
     "sources_imported": 117
   },
   "resolved_via_attendance": {
     "scope": "state",
-    "count": 33
+    "count": 31
   },
   "unresolved_owners": {
     "scope": "state",
@@ -69,8 +69,8 @@
         "notes": []
       },
       {
-        "item_id": 35,
-        "id": "AT-0035",
+        "item_id": 34,
+        "id": "AT-0034",
         "location": "2026-09-18-design-review.md:14",
         "additional_sources": 0,
         "kind": "unassigned",
@@ -80,8 +80,8 @@
         "notes": []
       },
       {
-        "item_id": 36,
-        "id": "AT-0036",
+        "item_id": 35,
+        "id": "AT-0035",
         "location": "2026-09-18-design-review.md:15",
         "additional_sources": 0,
         "kind": "unassigned",
@@ -91,8 +91,8 @@
         "notes": []
       },
       {
-        "item_id": 44,
-        "id": "AT-0044",
+        "item_id": 43,
+        "id": "AT-0043",
         "location": "2026-09-23-standup.md:8",
         "additional_sources": 0,
         "kind": "ambiguous",
@@ -105,8 +105,8 @@
         "notes": []
       },
       {
-        "item_id": 63,
-        "id": "AT-0063",
+        "item_id": 62,
+        "id": "AT-0062",
         "location": "2026-09-30-q4-offsite.md:16",
         "additional_sources": 0,
         "kind": "ambiguous",
@@ -119,8 +119,8 @@
         "notes": []
       },
       {
-        "item_id": 64,
-        "id": "AT-0064",
+        "item_id": 63,
+        "id": "AT-0063",
         "location": "2026-09-30-q4-offsite.md:17",
         "additional_sources": 0,
         "kind": "ambiguous",
@@ -133,8 +133,8 @@
         "notes": []
       },
       {
-        "item_id": 65,
-        "id": "AT-0065",
+        "item_id": 64,
+        "id": "AT-0064",
         "location": "2026-09-30-q4-offsite.md:18",
         "additional_sources": 0,
         "kind": "unassigned",
@@ -144,8 +144,8 @@
         "notes": []
       },
       {
-        "item_id": 70,
-        "id": "AT-0070",
+        "item_id": 69,
+        "id": "AT-0069",
         "location": "2026-10-01-quote-portal-weekly.md:12",
         "additional_sources": 0,
         "kind": "unassigned",
@@ -155,8 +155,8 @@
         "notes": []
       },
       {
-        "item_id": 81,
-        "id": "AT-0081",
+        "item_id": 80,
+        "id": "AT-0080",
         "location": "2026-10-07-standup.md:9",
         "additional_sources": 0,
         "kind": "ambiguous",
@@ -169,8 +169,8 @@
         "notes": []
       },
       {
-        "item_id": 83,
-        "id": "AT-0083",
+        "item_id": 82,
+        "id": "AT-0082",
         "location": "2026-10-08-billing-go-no-go.md:9",
         "additional_sources": 0,
         "kind": "ambiguous",
@@ -183,8 +183,8 @@
         "notes": []
       },
       {
-        "item_id": 105,
-        "id": "AT-0105",
+        "item_id": 103,
+        "id": "AT-0103",
         "location": "untitled.md:2",
         "additional_sources": 0,
         "kind": "ambiguous",
@@ -200,8 +200,8 @@
   },
   "missing_due_dates": {
     "scope": "state",
-    "count": 28,
-    "no_date": 24,
+    "count": 26,
+    "no_date": 22,
     "unresolved": 4,
     "rows": [
       {
@@ -275,18 +275,8 @@
         "raw": "- [ ] Rahul to fix the pagination bug"
       },
       {
-        "item_id": 31,
-        "id": "AT-0031",
-        "location": "2026-09-17-billing-migration-sync.md:12",
-        "additional_sources": 0,
-        "kind": "no_date",
-        "due_raw": null,
-        "reason": null,
-        "raw": "- [ ] Rahul to review the schema mapping doc"
-      },
-      {
-        "item_id": 35,
-        "id": "AT-0035",
+        "item_id": 34,
+        "id": "AT-0034",
         "location": "2026-09-18-design-review.md:14",
         "additional_sources": 0,
         "kind": "no_date",
@@ -295,8 +285,8 @@
         "raw": "- [ ] Everyone to review the prototype before the next review"
       },
       {
-        "item_id": 36,
-        "id": "AT-0036",
+        "item_id": 35,
+        "id": "AT-0035",
         "location": "2026-09-18-design-review.md:15",
         "additional_sources": 0,
         "kind": "no_date",
@@ -305,8 +295,8 @@
         "raw": "- [ ] TBD to write the design-system changelog"
       },
       {
-        "item_id": 40,
-        "id": "AT-0040",
+        "item_id": 39,
+        "id": "AT-0039",
         "location": "2026-09-21-incident-review.md:17",
         "additional_sources": 0,
         "kind": "no_date",
@@ -315,8 +305,8 @@
         "raw": "- [ ] Karan to refund affected customers"
       },
       {
-        "item_id": 45,
-        "id": "AT-0045",
+        "item_id": 44,
+        "id": "AT-0044",
         "location": "2026-09-23-standup.md:9",
         "additional_sources": 0,
         "kind": "no_date",
@@ -325,8 +315,8 @@
         "raw": "- [ ] Sam to rotate the staging credentials"
       },
       {
-        "item_id": 53,
-        "id": "AT-0053",
+        "item_id": 52,
+        "id": "AT-0052",
         "location": "2026-09-28-acme-renewal-checkin.md:11",
         "additional_sources": 0,
         "kind": "no_date",
@@ -335,8 +325,8 @@
         "raw": "- [ ] Lena to share the usage report with Meera"
       },
       {
-        "item_id": 58,
-        "id": "AT-0058",
+        "item_id": 57,
+        "id": "AT-0057",
         "location": "2026-09-29-billing-cutover-planning.md:12",
         "additional_sources": 1,
         "kind": "no_date",
@@ -345,8 +335,8 @@
         "raw": "- [ ] Karan to freeze invoice edits from 9 Oct"
       },
       {
-        "item_id": 62,
-        "id": "AT-0062",
+        "item_id": 61,
+        "id": "AT-0061",
         "location": "2026-09-30-q4-offsite.md:12",
         "additional_sources": 0,
         "kind": "unresolved",
@@ -355,8 +345,8 @@
         "raw": "+ [ ] Sam to propose the on-call rotation by mid-October"
       },
       {
-        "item_id": 63,
-        "id": "AT-0063",
+        "item_id": 62,
+        "id": "AT-0062",
         "location": "2026-09-30-q4-offsite.md:16",
         "additional_sources": 0,
         "kind": "no_date",
@@ -365,8 +355,8 @@
         "raw": "- [ ] Priya to own the hiring plan for the two QA roles"
       },
       {
-        "item_id": 70,
-        "id": "AT-0070",
+        "item_id": 69,
+        "id": "AT-0069",
         "location": "2026-10-01-quote-portal-weekly.md:12",
         "additional_sources": 0,
         "kind": "no_date",
@@ -375,8 +365,8 @@
         "raw": "- [ ] Team to decide on the launch date"
       },
       {
-        "item_id": 76,
-        "id": "AT-0076",
+        "item_id": 75,
+        "id": "AT-0075",
         "location": "2026-10-05-onboarding-retro.md:12",
         "additional_sources": 0,
         "kind": "no_date",
@@ -385,8 +375,8 @@
         "raw": "- [ ] Priya to review the welcome email for accessibility"
       },
       {
-        "item_id": 79,
-        "id": "AT-0079",
+        "item_id": 78,
+        "id": "AT-0078",
         "location": "2026-10-06-quote-portal-weekly.md:11",
         "additional_sources": 0,
         "kind": "no_date",
@@ -395,8 +385,8 @@
         "raw": "- [ ] Sam to set up uptime monitoring"
       },
       {
-        "item_id": 82,
-        "id": "AT-0082",
+        "item_id": 81,
+        "id": "AT-0081",
         "location": "2026-10-07-standup.md:10",
         "additional_sources": 0,
         "kind": "no_date",
@@ -405,8 +395,8 @@
         "raw": "- [ ] Anita to update the style guide"
       },
       {
-        "item_id": 95,
-        "id": "AT-0095",
+        "item_id": 94,
+        "id": "AT-0094",
         "location": "2026-10-12-billing-post-cutover.md:12",
         "additional_sources": 0,
         "kind": "no_date",
@@ -415,8 +405,8 @@
         "raw": "- [ ] Rahul to write the migration runbook"
       },
       {
-        "item_id": 98,
-        "id": "AT-0098",
+        "item_id": 97,
+        "id": "AT-0097",
         "location": "2026-10-13-quote-portal-weekly.md:12",
         "additional_sources": 0,
         "kind": "no_date",
@@ -425,8 +415,8 @@
         "raw": "- [ ] Meera to follow up on the demo"
       },
       {
-        "item_id": 100,
-        "id": "AT-0100",
+        "item_id": 99,
+        "id": "AT-0099",
         "location": "2026-10-14-acme-renewal-wrapup.md:10",
         "additional_sources": 0,
         "kind": "unresolved",
@@ -435,18 +425,8 @@
         "raw": "- [ ] Lena to schedule the quarterly business review for November"
       },
       {
-        "item_id": 101,
-        "id": "AT-0101",
-        "location": "2026-10-14-acme-renewal-wrapup.md:12",
-        "additional_sources": 0,
-        "kind": "no_date",
-        "due_raw": null,
-        "reason": null,
-        "raw": "- [ ] Priya to prepare the renewal one-pager"
-      },
-      {
-        "item_id": 102,
-        "id": "AT-0102",
+        "item_id": 100,
+        "id": "AT-0100",
         "location": "2026-10-03-sales-pipeline.md:6",
         "additional_sources": 0,
         "kind": "unresolved",
@@ -455,8 +435,8 @@
         "raw": "- [ ] Meera to chase Orbit Labs by Friday"
       },
       {
-        "item_id": 103,
-        "id": "AT-0103",
+        "item_id": 101,
+        "id": "AT-0101",
         "location": "2026-10-03-sales-pipeline.md:7",
         "additional_sources": 0,
         "kind": "no_date",
@@ -465,8 +445,8 @@
         "raw": "- [ ] Lena to clean up duplicate leads"
       },
       {
-        "item_id": 104,
-        "id": "AT-0104",
+        "item_id": 102,
+        "id": "AT-0102",
         "location": "untitled.md:1",
         "additional_sources": 0,
         "kind": "no_date",
@@ -475,8 +455,8 @@
         "raw": "- [ ] Sam to chase the vendor"
       },
       {
-        "item_id": 105,
-        "id": "AT-0105",
+        "item_id": 103,
+        "id": "AT-0103",
         "location": "untitled.md:2",
         "additional_sources": 0,
         "kind": "unresolved",
@@ -488,22 +468,11 @@
   },
   "possible_duplicates": {
     "scope": "state",
-    "count": 6,
+    "count": 4,
     "rows": [
       {
-        "item_id": 31,
-        "id": "AT-0031",
-        "other_item_id": 8,
-        "other_id": "AT-0008",
-        "reason": "due_differs",
-        "reason_text": "same task+owner, due differs (no date vs 2026-09-07)",
-        "due": "no date",
-        "other_due": "2026-09-07",
-        "task_text": "Review the schema mapping doc"
-      },
-      {
-        "item_id": 48,
-        "id": "AT-0048",
+        "item_id": 47,
+        "id": "AT-0047",
         "other_item_id": 22,
         "other_id": "AT-0022",
         "reason": "due_differs",
@@ -513,8 +482,8 @@
         "task_text": "Estimate SSO work"
       },
       {
-        "item_id": 47,
-        "id": "AT-0047",
+        "item_id": 46,
+        "id": "AT-0046",
         "other_item_id": 23,
         "other_id": "AT-0023",
         "reason": "due_differs",
@@ -524,8 +493,8 @@
         "task_text": "Collect 5 customer quotes for the landing page"
       },
       {
-        "item_id": 41,
-        "id": "AT-0041",
+        "item_id": 40,
+        "id": "AT-0040",
         "other_item_id": 24,
         "other_id": "AT-0024",
         "reason": "due_differs",
@@ -535,8 +504,8 @@
         "task_text": "Share updated wireframes"
       },
       {
-        "item_id": 43,
-        "id": "AT-0043",
+        "item_id": 42,
+        "id": "AT-0042",
         "other_item_id": 26,
         "other_id": "AT-0026",
         "reason": "due_differs",
@@ -544,17 +513,6 @@
         "due": "2026-09-23",
         "other_due": "no date",
         "task_text": "Fix the pagination bug"
-      },
-      {
-        "item_id": 101,
-        "id": "AT-0101",
-        "other_item_id": 54,
-        "other_id": "AT-0054",
-        "reason": "due_differs",
-        "reason_text": "same task+owner, due differs (no date vs 2026-10-02)",
-        "due": "no date",
-        "other_due": "2026-10-02",
-        "task_text": "Prepare the renewal one-pager"
       }
     ]
   },

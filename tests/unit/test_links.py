@@ -45,7 +45,10 @@ def test_precedence_constant_is_the_spec_order():
 def test_due_differs_variants():
     assert cls(new(**EXPLICIT), item(due=date(2026, 10, 8), conf="explicit")) is R.DUE_DIFFERS
     assert cls(new(**EXPLICIT), item()) is R.DUE_DIFFERS  # one null
-    assert cls(new(), item(**EXPLICIT)) is R.DUE_DIFFERS
+    # amended D-04: a LATER dateless restatement of a dated item is Tier-1 (merged, never linked) ...
+    assert cls(new(), item(**EXPLICIT)) is None
+    # ... but an EARLIER dateless source (new meeting date before the item's latest) still links
+    assert cls(new(d=D0 - timedelta(days=3)), item(**EXPLICIT)) is R.DUE_DIFFERS
     assert cls(new(conf="unresolved"), item(**EXPLICIT)) is R.DUE_DIFFERS  # unresolved vs date
     assert cls(new(conf="unresolved"), item(conf="unresolved")) is R.DUE_DIFFERS
 

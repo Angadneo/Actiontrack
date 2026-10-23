@@ -10,7 +10,9 @@ Rules (spec 10.6.1)
   unknown meeting date sorts as the latest (default adopted for the unstated null case, gap G-C25).
 * ``description``, ``task_text`` and the core key follow the EARLIEST present source.
 * ``due_*`` (``due_raw``, ``due_raw_other``, ``due_date``, ``due_confidence``, ``due_rule``, ``due_reason``)
-  and the owner list follow the LATEST present source; ``note_status`` is that source's checkbox
+  follow the LATEST present source THAT HAS a due (``due_confidence != none``; a dateless later restatement
+  does not erase the due, see ``due_source``); if no present source has a due, the latest present source.
+  The owner list follows the LATEST present source; ``note_status`` is that source's checkbox
   (``[x]`` -> ``done``). ``note_status`` is informational: the item's stored ``status`` is NOT rewritten
   from it here (manual done is sticky, BR-09; a Tier-1 / Tier-1b completion and the reopen rule belong to
   T-M5-08 / T-M5-10 / T-M5-11, G-C25).
@@ -23,7 +25,7 @@ Public API
 ``SourceView``                one item source with its meeting date and file path (plain frozen data).
 ``source_order_key(source)``  the ascending key above.
 ``source_pool(sources)``      the sources that count (present ones, else all).
-``earliest_source(sources)`` / ``latest_source(sources)``
+``earliest_source(sources)`` / ``latest_source(sources)`` / ``due_source(sources)``
 ``CanonicalFields``           result dataclass (see below).
 ``select_canonical(sources) -> CanonicalFields``   raises ``ValueError`` for no sources.
 """
@@ -38,6 +40,7 @@ __all__ = [
     "CanonicalFields",
     "OwnerView",
     "SourceView",
+    "due_source",
     "earliest_source",
     "latest_source",
     "select_canonical",
@@ -106,6 +109,17 @@ def latest_source(sources: Sequence[SourceView]) -> SourceView:
     return max(pool, key=source_order_key)
 
 
+def due_source(sources: Sequence[SourceView]) -> SourceView:
+    """The source that drives the ``due_*`` fields: the latest counting source THAT HAS a due
+    (``due_confidence != "none"``, so ``unresolved`` counts); when none has one, the latest counting source.
+    A later dateless restatement therefore never erases the due of an earlier dated source."""
+    pool = source_pool(sources)
+    if not pool:
+        raise ValueError("an item needs at least one source")
+    dated = [s for s in pool if s.due_confidence != "none"]
+    return max(dated or pool, key=source_order_key)
+
+
 @dataclass(frozen=True, slots=True)
 class CanonicalFields:
     """The canonical (item-level) fields derived from the sources, plus which sources drove them."""
@@ -155,16 +169,17 @@ def select_canonical(sources: Sequence[SourceView]) -> CanonicalFields:
     """Canonical fields of an item from its sources (module docstring has the rules)."""
     first = earliest_source(sources)
     last = latest_source(sources)
+    due = due_source(sources)
     return CanonicalFields(
         description=first.description,
         task_text=first.task_text or first.description,
         core_key=first.core_key,
-        due_raw=last.due_raw,
-        due_raw_other=last.due_raw_other,
-        due_date=last.due_date,
-        due_confidence=last.due_confidence,
-        due_rule=last.due_rule,
-        due_reason=last.due_reason,
+        due_raw=due.due_raw,
+        due_raw_other=due.due_raw_other,
+        due_date=due.due_date,
+        due_confidence=due.due_confidence,
+        due_rule=due.due_rule,
+        due_reason=due.due_reason,
         owners=last.owners,
         note_status="done" if last.checkbox_state == "done" else "open",
         description_source_id=first.source_id,

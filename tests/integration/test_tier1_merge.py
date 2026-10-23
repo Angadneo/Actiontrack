@@ -98,6 +98,41 @@ def test_merge_without_business_change_leaves_updated_at(tmp_path):
     assert item["created_at"] == item["updated_at"]
 
 
+@pytest.mark.ac("AC-07.1")
+def test_dateless_later_restatement_merges_and_keeps_due(tmp_path):
+    """Amended D-04: dated item, later dateless restatement of the same task -> one item, both sources."""
+    dated = "- [ ] Rahul Mehta to freeze invoice edits by 2026-10-30"
+    dateless = "- [ ] Rahul Mehta to freeze invoice edits"
+    db, res = two_files(tmp_path, ("2026-10-14", dated), ("2026-10-20", dateless))
+    assert counts(db) == (1, 2)
+    assert (res.counters.items_new, res.counters.items_merged, res.counters.possible_duplicates) == (1, 1, 0)
+    (item,) = q(db, "SELECT * FROM action_item")
+    assert (item["due_date"], item["due_confidence"]) == ("2026-10-30", "explicit")  # not erased
+    assert "2026-10-30" in item["due_raw"]
+    assert q(db, "SELECT count(*) FROM item_link")[0][0] == 0
+    assert q(db, "SELECT count(*) FROM item_source WHERE item_id = ?", (item["id"],))[0][0] == 2  # CR
+    # a re-ingest of the unchanged folder changes nothing
+    again = ingest(db, tmp_path / "notes")
+    assert counts(db) == (1, 2) and again.counters.items_new == 0
+
+
+def test_dateless_earlier_then_dated_later_stays_separate_with_due_differs(tmp_path):
+    """The reverse case is conservative: existing dateless + new dated = two items + due_differs."""
+    dated = "- [ ] Rahul Mehta to freeze invoice edits by 2026-10-30"
+    dateless = "- [ ] Rahul Mehta to freeze invoice edits"
+    db, _ = two_files(tmp_path, ("2026-10-14", dateless), ("2026-10-20", dated))
+    assert counts(db) == (2, 2)
+    assert [r["reason"] for r in q(db, "SELECT reason FROM item_link")] == ["due_differs"]
+
+
+def test_unresolved_due_restatement_stays_separate(tmp_path):
+    dated = "- [ ] Rahul Mehta to freeze invoice edits by 2026-10-30"
+    unresolved = "- [ ] Rahul Mehta to freeze invoice edits by ASAP"
+    db, _ = two_files(tmp_path, ("2026-10-14", dated), ("2026-10-20", unresolved))
+    assert counts(db) == (2, 2)
+    assert [r["reason"] for r in q(db, "SELECT reason FROM item_link")] == ["due_differs"]
+
+
 NEGATIVES = {
     "due differs": ("- [ ] Rahul Mehta to freeze invoice edits by 2026-10-30", "- [ ] Rahul Mehta to freeze invoice edits by 2026-10-31", "due_differs"),
     "one due null": ("- [ ] Rahul Mehta to freeze invoice edits", "- [ ] Rahul Mehta to freeze invoice edits by 2026-10-31", "due_differs"),

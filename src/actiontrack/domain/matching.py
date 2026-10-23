@@ -16,7 +16,7 @@ Sections (later tasks append their own, keeping this docstring's API list curren
    ``tier1_failures(new, item, *, window_days)`` -> tuple of failed condition numbers 1..6
    (empty = Tier-1), ``is_tier1(new, item, *, window_days) -> bool``, ``pick_tier1(new, items, *,
    window_days) -> ItemView | None`` (lowest item id), ``window_ok``, ``due_compatible``,
-   ``status_compatible``, ``owner_person_set``, ``all_resolved``.
+   ``due_condition_holds`` (condition 4 incl. the dateless-restatement extension), ``status_compatible``, ``owner_person_set``, ``all_resolved``.
 3. Possible-duplicate links (T-M5-09) -- implemented:
    ``LINK_PRECEDENCE`` (the one ordered constant, G-27), ``link_reasons(new, item, ...)`` (every reason
    that applies to a pair, unordered), ``classify_pair(new, item, *, window_days, fuzzy_threshold)
@@ -196,6 +196,31 @@ def due_compatible(a_date: date | None, a_conf: str, b_date: date | None, b_conf
     return a_date is None and b_date is None and a_conf == "none" and b_conf == "none"
 
 
+_RESOLVED_DUE_CONFIDENCES = frozenset({"explicit", "relative", "inferred"})
+
+
+def due_condition_holds(new: NewView, item: ItemView) -> bool:
+    """Condition 4 as applied to a new source and an existing item (spec 10.6, amends D-04).
+
+    Holds when ``due_compatible`` does (equal resolved dates, or both ``none``), OR when the new source is a
+    DATELESS RESTATEMENT of an item that already has a resolved due: the new source has ``due_confidence ==
+    none`` (no date phrase at all; an ``unresolved`` due such as ``?(next week)`` stays incompatible, G-C22),
+    the item's canonical due is a resolved date (explicit / relative / inferred) and the new source is a LATER
+    restatement (its meeting date is not earlier than the item's latest source meeting date; an unknown date
+    on either side fails). The item keeps its due (``canonical.select_canonical``).
+
+    The REVERSE case is deliberately NOT extended (conservative): an existing dateless item and a new DATED
+    source stay separate items with a ``due_differs`` link, as do two items dated differently."""
+    if due_compatible(new.due_date, new.due_confidence, item.due_date, item.due_confidence):
+        return True
+    if new.due_confidence != "none" or new.due_date is not None:
+        return False
+    if item.due_date is None or item.due_confidence not in _RESOLVED_DUE_CONFIDENCES:
+        return False
+    latest = _latest_date(item)
+    return new.meeting_date is not None and latest is not None and new.meeting_date >= latest
+
+
 def status_compatible(existing: str, new: str) -> bool:
     """Condition 5: both open, both done, or existing open + new done."""
     return existing == new or (existing == "open" and new == "done")
@@ -235,7 +260,7 @@ def tier1_failures(new: NewView, item: ItemView, *, window_days: int) -> tuple[i
         failed.append(2)
     if not _same_resolved_owners(new, item):
         failed.append(3)
-    if not due_compatible(new.due_date, new.due_confidence, item.due_date, item.due_confidence):
+    if not due_condition_holds(new, item):
         failed.append(4)
     if not status_compatible(item.status, new.status):
         failed.append(5)
@@ -293,7 +318,7 @@ def link_reasons(
             reasons.add(_R.OWNER_DIFFERS)
         if not status_compatible(item.status, new.status):
             reasons.add(_R.STATUS_DIFFERS)
-        if not due_compatible(new.due_date, new.due_confidence, item.due_date, item.due_confidence):
+        if not due_condition_holds(new, item):
             reasons.add(_R.DUE_DIFFERS)
         if _same_file(new, item):
             reasons.add(_R.SAME_FILE)

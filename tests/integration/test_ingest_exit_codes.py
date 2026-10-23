@@ -198,11 +198,11 @@ def test_sample_figures_verified_against_the_database(capsys, tmp_path):
     conn = sqlite3.connect(db)
     one = lambda sql: conn.execute(sql).fetchone()[0]  # noqa: E731
     assert report["files"]["discovered"] == 35 and report["files"]["empty"] == 1 and report["files"]["failed"] == 1
-    assert report["items"]["new"] == one("SELECT count(*) FROM action_item") == 105
-    assert report["items"]["merged_duplicates"] == 12 and report["items"]["sources_imported"] == one(
+    assert report["items"]["new"] == one("SELECT count(*) FROM action_item") == 103
+    assert report["items"]["merged_duplicates"] == 14 and report["items"]["sources_imported"] == one(
         "SELECT count(*) FROM item_source"
     ) == 117
-    assert report["items"]["possible_duplicates"] == one("SELECT count(*) FROM item_link WHERE kind = 'possible_duplicate'") == 11
+    assert report["items"]["possible_duplicates"] == one("SELECT count(*) FROM item_link WHERE kind = 'possible_duplicate'") == 9
     assert report["items"]["already_done_in_note"] == one("SELECT count(*) FROM item_source WHERE checkbox_state = 'done'") == 13
     assert report["unresolved_owners"]["ambiguous"] == 7 and report["unresolved_owners"]["unassigned"] == 5
     assert report["missing_due_dates"]["count"] == one(

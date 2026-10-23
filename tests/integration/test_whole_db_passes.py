@@ -3,9 +3,9 @@
 Only the CONFIG changes between runs; no note file is touched, so every re-run reports ``unchanged 33`` and the
 owner outcome can only change through the whole-database passes of spec 10.7.9 (G-08).
 
-Hand-derived expectations (spec A.3, ``tests/golden/expected_owners.csv``): 117 sources -> 105 items; the
-attendance rule (10.3 step 3a) decides 36 owner phrases (17 Priya + 19 Rahul); three of them were merged into
-other items by Tier-1/1b, so the canonical ``item_owner`` state has 33 such rows (16 Priya + 17 Rahul);
+Hand-derived expectations (spec A.3, ``tests/golden/expected_owners.csv``): 117 sources -> 103 items; the
+attendance rule (10.3 step 3a) decides 36 owner phrases (17 Priya + 19 Rahul); five of them were merged into
+other items by Tier-1/1b, so the canonical ``item_owner`` state has 31 such rows (15 Priya + 16 Rahul);
 7 items are ambiguous (4 Priya, 3 Rahul).
 """
 
@@ -61,7 +61,7 @@ def test_roster_alias_settles_ambiguous_priya_items_on_an_unchanged_folder(fresh
     """Spec 10.3 step 1: a roster alias hit pins the bare token ``Priya`` to ONE person (alias provenance) and wins
     over the namesake rules of step 3. Adding ``Priya`` as an alias of Priya Nair is a legitimate roster edit (it
     never pins two people). Consequences on the sample: the 4 ambiguous Priya items (09-17, 09-23, 09-30, untitled)
-    become resolved/alias; the 16 attendance-resolved Priya rows are re-pinned by the alias too (provenance alias;
+    become resolved/alias; the 15 attendance-resolved Priya rows are re-pinned by the alias too (provenance alias;
     those that had been Priya Shah move to Priya Nair, each with an owner_changed event); Rahul is untouched."""
     db, folder, cfg, tmp = fresh
     before_ambiguous = q(db, "SELECT item_id FROM item_owner WHERE owner_status = 'ambiguous' AND owner_raw = 'Priya' ORDER BY item_id")
@@ -80,7 +80,7 @@ def test_roster_alias_settles_ambiguous_priya_items_on_an_unchanged_folder(fresh
     assert q(db, "SELECT count(*) FROM item_owner WHERE owner_raw = 'Priya' AND provenance != 'alias'")[0][0] == 0
     assert q(db, "SELECT count(*) FROM item_owner WHERE owner_status = 'ambiguous'")[0][0] == 3  # only Rahul left
     assert {r["owner_raw"] for r in q(db, "SELECT owner_raw FROM item_owner WHERE owner_status = 'ambiguous'")} == {"Rahul"}
-    assert res.counters.resolved_via_attendance == 17  # the Rahul attendance rows only
+    assert res.counters.resolved_via_attendance == 16  # the Rahul attendance rows only
     again = ingest(db, folder, pinned)
     assert again.reresolution.is_empty
 
@@ -94,20 +94,20 @@ def test_attendee_disambiguation_off_downgrades_every_attendance_row_on_an_uncha
     res = ingest(db, folder, off)
     assert res.counters.files_unchanged == 33
     down = res.reresolution.downgrades
-    assert len(down) == 33  # the 36 phrases = 33 canonical rows (3 were merged away)
-    assert Counter(c.owner_raw for c in down) == {"Rahul": 17, "Priya": 16}
+    assert len(down) == 31  # the 36 phrases = 31 canonical rows (5 were merged away)
+    assert Counter(c.owner_raw for c in down) == {"Rahul": 16, "Priya": 15}
     assert {c.kind for c in res.reresolution.changes} == {"downgraded_to_ambiguous"}
     assert q(db, "SELECT count(*) FROM item_source_owner WHERE provenance = 'attendee_in_meeting'")[0][0] == 0
-    assert q(db, "SELECT count(*) FROM item_owner WHERE owner_status = 'ambiguous'")[0][0] == 7 + 33
+    assert q(db, "SELECT count(*) FROM item_owner WHERE owner_status = 'ambiguous'")[0][0] == 7 + 31
     warns = [w for w in q(db, "SELECT * FROM ingest_warning WHERE run_id = ?", (res.run.run_id,))
              if w["code"] == codes.W_OWNER_NOW_AMBIGUOUS]
-    assert len(warns) == 33
+    assert len(warns) == 31
     assert all(w["source_file_id"] is not None and w["line"] for w in warns)
     assert res.counters.resolved_via_attendance == 0
     assert q(db, "SELECT resolved_via_attendance FROM ingest_run WHERE id = ?", (res.run.run_id,))[0][0] == 0
     # switching the setting back restores every one of them (10.3 step 6 is symmetric)
     back = ingest(db, folder, cfg)
-    assert back.counters.resolved_via_attendance == 33
+    assert back.counters.resolved_via_attendance == 31
     assert {c.kind for c in back.reresolution.changes} == {"resolved_from_ambiguous"}
 
 
@@ -128,7 +128,7 @@ def test_second_sam_makes_only_the_no_attendee_list_rows_ambiguous(fresh):
     assert len(rest) == 13 and {(r[0], r[1]) for r in rest} == {("attendee_in_meeting", "resolved")}
     kinds = Counter(c.kind for c in res.reresolution.changes)
     assert kinds == {"changed": 13, "downgraded_to_ambiguous": 2}
-    assert res.counters.resolved_via_attendance == 33 + 13
+    assert res.counters.resolved_via_attendance == 31 + 13
 
 
 @pytest.mark.ac("AC-05.19")
@@ -146,8 +146,10 @@ def test_merges_and_completions_survive_the_downgrade(fresh):
     assert item_state(db) == state  # sources, links, status and completion untouched
     flagged = {c.item_id for c in res.reresolution.changes if c.merged_or_completed_under_earlier_resolution}
     downgraded = {c.item_id for c in res.reresolution.downgrades}
-    assert flagged == downgraded & expect_flag and len(flagged) == 6
-    assert all(q(db, "SELECT status FROM action_item WHERE id = ?", (i,))[0][0] == "done" for i in flagged)
+    assert flagged == downgraded & expect_flag and len(flagged) == 8
+    # 6 completed items (Tier-1b) + the 2 OPEN items merged by the dateless-restatement rule (amended D-04)
+    by_status = Counter(q(db, "SELECT status FROM action_item WHERE id = ?", (i,))[0][0] for i in flagged)
+    assert by_status == {"done": 6, "open": 2}
     msgs = {w[1]: w[2] for w in res.reresolution.warnings if w[0] == codes.W_OWNER_NOW_AMBIGUOUS}
     for item_id in downgraded:
         assert ("merged/completed under an earlier owner resolution" in msgs[item_id]) == (item_id in flagged)
@@ -182,7 +184,7 @@ def test_dry_run_after_a_config_change_is_byte_identical_and_reports_what_a_real
     real = ingest(db, folder, off)
     assert dry.counters == real.counters
     assert dry.reresolution == real.reresolution
-    assert len(dry.reresolution.downgrades) == 33
+    assert len(dry.reresolution.downgrades) == 31
     assert dry.run_row.status == real.run_row.status == "partial"  # the sample has one failed file (exit 5)
     assert dry.exit_code == real.exit_code == 5
 

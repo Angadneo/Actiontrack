@@ -118,7 +118,7 @@ def test_handoff_written_and_recorded(run):
     assert doc["as_of"] == TODAY and doc["person_id"] == "priya-nair"
     assert doc["args_sha256"] == args_sha256(args)
     assert doc["item_ids_hash"] == item_ids_hash(doc["item_ids"])
-    assert args["subject"].startswith("Follow-up: your open action items (6 open, 5 overdue)")
+    assert args["subject"].startswith("Follow-up: your open action items (5 open, 5 overdue)")
     (row,) = rows(run.db)
     assert row["status"] == "pending_handoff" and row["channel"] == "handoff" and row["source"] == "actiontrack"
     assert row["args_sha256"] == doc["args_sha256"] and row["item_ids_hash"] == doc["item_ids_hash"]

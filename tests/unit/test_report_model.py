@@ -9,6 +9,7 @@ downgrade warning, the unresolved-owner row and the re-resolution row.
 from __future__ import annotations
 
 import sqlite3
+from collections import Counter
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -63,14 +64,14 @@ def test_files_line_partitions_and_matches_the_sample(sample):
 @pytest.mark.ac("AC-01.7")
 def test_items_line_partitions_every_source_exactly_once(sample):
     it = sample.first.report.items
-    assert (it.new, it.merged_duplicates, it.updated, it.unchanged) == (105, 12, 0, 0)
+    assert (it.new, it.merged_duplicates, it.updated, it.unchanged) == (103, 14, 0, 0)
     assert it.sources_imported == 117 == it.new + it.merged_duplicates + it.updated + it.unchanged
-    assert it.possible_duplicates == 11
+    assert it.possible_duplicates == 9
     assert it.already_done_in_note == 13  # orthogonal to the four classes
     # counts equal the database deltas
     assert q(sample.db, "SELECT count(*) FROM item_source")[0][0] == 117
     assert q(sample.db, "SELECT count(*) FROM action_item")[0][0] == it.new
-    assert q(sample.db, "SELECT count(*) FROM item_link WHERE kind = 'possible_duplicate'")[0][0] == 11
+    assert q(sample.db, "SELECT count(*) FROM item_link WHERE kind = 'possible_duplicate'")[0][0] == 9
     assert q(sample.db, "SELECT count(*) FROM item_source WHERE checkbox_state = 'done'")[0][0] == 13
 
 
@@ -135,7 +136,7 @@ def test_ambiguous_rows_equal_the_open_group_ambiguous_count(sample):
 def test_due_section_is_open_items_without_a_date_with_reasons(sample):
     rows = sample.first.report.missing_due_dates
     expected = q(sample.db, "SELECT count(*) FROM action_item WHERE status = 'open' AND due_date IS NULL")[0][0]
-    assert len(rows) == expected == 28
+    assert len(rows) == expected == 26  # was 28: two dated items absorbed their dateless restatements
     unresolved = [d for d in rows if d.kind == "unresolved"]
     assert sorted((d.due_raw, d.reason) for d in unresolved) == [
         ("Friday", "no_meeting_date"),
@@ -153,7 +154,7 @@ def test_duplicate_section_lists_pairs_with_an_open_item_later_id_first(sample):
     status = {r[0]: r[1] for r in q(sample.db, "SELECT id, status FROM action_item")}
     links = q(sample.db, "SELECT * FROM item_link WHERE kind = 'possible_duplicate'")
     expected = {(r["to_item_id"], r["from_item_id"]) for r in links if "open" in (status[r["from_item_id"]], status[r["to_item_id"]])}
-    assert {(p.item_id, p.other_item_id) for p in pairs} == expected and len(expected) == 6
+    assert {(p.item_id, p.other_item_id) for p in pairs} == expected and len(expected) == 4  # was 6: two clusters merged
     assert all(p.item_id > p.other_item_id and p.reason == "due_differs" for p in pairs)
     assert all(p.reason_text.startswith("same task+owner, due differs (") for p in pairs)
     assert [(p.other_item_id, p.item_id) for p in pairs] == sorted((p.other_item_id, p.item_id) for p in pairs)
@@ -161,7 +162,7 @@ def test_duplicate_section_lists_pairs_with_an_open_item_later_id_first(sample):
 
 @pytest.mark.ac("AC-01.7")
 def test_resolved_via_attendance_is_a_state_count(sample):
-    assert sample.first.report.resolved_via_attendance == 33 == sample.second.report.resolved_via_attendance
+    assert sample.first.report.resolved_via_attendance == 31 == sample.second.report.resolved_via_attendance
 
 
 @pytest.mark.ac("AC-01.7")
@@ -232,14 +233,14 @@ def test_h05_note_rides_on_the_downgrade_warning_and_rows(tmp_path):
     res = ingest(db, folder, make_cfg(tmp_path, attendance=False, name="off.toml"))
     r: IngestReport = res.report
     flagged = {c.item_id for c in res.reresolution.changes if c.merged_or_completed_under_earlier_resolution}
-    assert len(flagged) == 6
+    assert len(flagged) == 8  # 6 completed (Tier-1b) + 2 open items merged by the dateless-restatement rule
     noted = [w for w in r.warnings if w.notes]
-    assert len(noted) == 6 and all(w.code == codes.W_OWNER_NOW_AMBIGUOUS for w in noted)
+    assert len(noted) == 8 and all(w.code == codes.W_OWNER_NOW_AMBIGUOUS for w in noted)
     assert all(ing.H05_NOTE in w.message and w.notes == (ing.H05_NOTE,) for w in noted)
     # the re-resolution section carries it too, and the items keep their status (done retained, H-05)
     assert {x.item_id for x in r.reresolution if x.notes} == flagged
-    for item_id in flagged:
-        assert q(db, "SELECT status FROM action_item WHERE id = ?", (item_id,))[0][0] == "done"
+    statuses = Counter(q(db, "SELECT status FROM action_item WHERE id = ?", (i,))[0][0] for i in flagged)
+    assert statuses == {"done": 6, "open": 2}
     # a flagged item that is still open also shows the note in its unresolved-owner row
     for row in r.unresolved_owners:
         assert bool(row.notes) == (row.item_id in flagged)

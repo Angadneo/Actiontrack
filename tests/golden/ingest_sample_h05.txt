@@ -3,47 +3,47 @@ Files: discovered 35 | ingested 0 | unchanged 33 | empty 1 | failed 1
 Items: new 0 | updated 0 | unchanged 0 | merged-duplicates 0 | possible-duplicates 0 | already-done-in-note 0
 (Files and Items count this run only; the lists below show OPEN items in the current database.)
 resolved via attendance: 0 (current state, all items)
-Unresolved owners (39):
-  AT-0005  2026-09-02-standup.md:9                  ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0008  2026-09-03-billing-migration-sync.md:10  ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0009  2026-09-03-billing-migration-sync.md:11  ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0012  2026-09-08-quote-portal-weekly.md:10     ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0015  2026-09-09-qa-standup.md:10              ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0019  2026-09-10-acme-renewal-prep.md:12       no owner found: "- [ ] Someone to update the CRM notes"
-  AT-0022  2026-09-14-onboarding-flow-design.md:11  ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0026  2026-09-15-quote-portal-weekly.md:12     ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0029  2026-09-17-billing-migration-sync.md:9   ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0031  2026-09-17-billing-migration-sync.md:12  ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0033  2026-09-18-design-review.md:12           ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0034  2026-09-18-design-review.md:13           ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0035  2026-09-18-design-review.md:14           no owner found: "- [ ] Everyone to review the prototype before th...
-  AT-0036  2026-09-18-design-review.md:15           no owner found: "- [ ] TBD to write the design-system changelog"
-  AT-0038  2026-09-21-incident-review.md:15         ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0039  2026-09-21-incident-review.md:16         ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0043  2026-09-22-quote-portal-weekly.md:12     ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0044  2026-09-23-standup.md:8                  ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0048  2026-09-24-onboarding-flow-design.md:12  ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0049  2026-09-25-qa-sync.md:9                  ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0050  2026-09-25-qa-sync.md:10                 ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0054  2026-09-28-acme-renewal-checkin.md:12    ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0063  2026-09-30-q4-offsite.md:16              ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0064  2026-09-30-q4-offsite.md:17              ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0065  2026-09-30-q4-offsite.md:18              no owner found: "- [ ] Everyone to submit their Q4 goals by 7 Oct"
-  AT-0067  2026-09-30-standup.md:12                 ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0070  2026-10-01-quote-portal-weekly.md:12     no owner found: "- [ ] Team to decide on the launch date"
-  AT-0074  2026-10-05-onboarding-retro.md:9         ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0076  2026-10-05-onboarding-retro.md:12        ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0080  2026-10-06-quote-portal-weekly.md:12     ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0081  2026-10-07-standup.md:9                  ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0083  2026-10-08-billing-go-no-go.md:9         ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0086  2026-10-09-security-review.md:19         ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0087  2026-10-09-security-review.md:20         ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0093  2026-10-12-billing-post-cutover.md:10    ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0095  2026-10-12-billing-post-cutover.md:12    ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0097  2026-10-13-quote-portal-weekly.md:11     ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0101  2026-10-14-acme-renewal-wrapup.md:12     ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0105  untitled.md:2                            ambiguous: "Priya" -> Priya Nair | Priya Shah
-Missing/unresolved due dates (28):
+Unresolved owners (37):
+  AT-0005  2026-09-02-standup.md:9                       ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0008  2026-09-03-billing-migration-sync.md:10 (+1)  ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+           note: merged/completed under an earlier owner resolution
+  AT-0009  2026-09-03-billing-migration-sync.md:11       ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0012  2026-09-08-quote-portal-weekly.md:10          ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0015  2026-09-09-qa-standup.md:10                   ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0019  2026-09-10-acme-renewal-prep.md:12            no owner found: "- [ ] Someone to update the CRM notes"
+  AT-0022  2026-09-14-onboarding-flow-design.md:11       ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0026  2026-09-15-quote-portal-weekly.md:12          ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0029  2026-09-17-billing-migration-sync.md:9        ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0032  2026-09-18-design-review.md:12                ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0033  2026-09-18-design-review.md:13                ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0034  2026-09-18-design-review.md:14                no owner found: "- [ ] Everyone to review the prototype befo...
+  AT-0035  2026-09-18-design-review.md:15                no owner found: "- [ ] TBD to write the design-system change...
+  AT-0037  2026-09-21-incident-review.md:15              ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0038  2026-09-21-incident-review.md:16              ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0042  2026-09-22-quote-portal-weekly.md:12          ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0043  2026-09-23-standup.md:8                       ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0047  2026-09-24-onboarding-flow-design.md:12       ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0048  2026-09-25-qa-sync.md:9                       ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0049  2026-09-25-qa-sync.md:10                      ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0053  2026-09-28-acme-renewal-checkin.md:12 (+1)    ambiguous: "Priya" -> Priya Nair | Priya Shah
+           note: merged/completed under an earlier owner resolution
+  AT-0062  2026-09-30-q4-offsite.md:16                   ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0063  2026-09-30-q4-offsite.md:17                   ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0064  2026-09-30-q4-offsite.md:18                   no owner found: "- [ ] Everyone to submit their Q4 goals by ...
+  AT-0066  2026-09-30-standup.md:12                      ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0069  2026-10-01-quote-portal-weekly.md:12          no owner found: "- [ ] Team to decide on the launch date"
+  AT-0073  2026-10-05-onboarding-retro.md:9              ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0075  2026-10-05-onboarding-retro.md:12             ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0079  2026-10-06-quote-portal-weekly.md:12          ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0080  2026-10-07-standup.md:9                       ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0082  2026-10-08-billing-go-no-go.md:9              ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0085  2026-10-09-security-review.md:19              ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0086  2026-10-09-security-review.md:20              ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0092  2026-10-12-billing-post-cutover.md:10         ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0094  2026-10-12-billing-post-cutover.md:12         ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0096  2026-10-13-quote-portal-weekly.md:11          ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0103  untitled.md:2                                 ambiguous: "Priya" -> Priya Nair | Priya Shah
+Missing/unresolved due dates (26):
   AT-0006  2026-09-02-standup.md:10                        no date
   AT-0010  2026-09-03-billing-migration-sync.md:12         no date
   AT-0013  2026-09-08-quote-portal-weekly.md:11            no date
@@ -51,43 +51,40 @@ Missing/unresolved due dates (28):
   AT-0019  2026-09-10-acme-renewal-prep.md:12              no date
   AT-0022  2026-09-14-onboarding-flow-design.md:11         no date
   AT-0026  2026-09-15-quote-portal-weekly.md:12            no date
-  AT-0031  2026-09-17-billing-migration-sync.md:12         no date
-  AT-0035  2026-09-18-design-review.md:14                  no date
-  AT-0036  2026-09-18-design-review.md:15                  no date
-  AT-0040  2026-09-21-incident-review.md:17                no date
-  AT-0045  2026-09-23-standup.md:9                         no date
-  AT-0053  2026-09-28-acme-renewal-checkin.md:11           no date
-  AT-0058  2026-09-29-billing-cutover-planning.md:12 (+1)  no date
-  AT-0062  2026-09-30-q4-offsite.md:12                     unresolved "mid-October" (vague)
-  AT-0063  2026-09-30-q4-offsite.md:16                     no date
-  AT-0070  2026-10-01-quote-portal-weekly.md:12            no date
-  AT-0076  2026-10-05-onboarding-retro.md:12               no date
-  AT-0079  2026-10-06-quote-portal-weekly.md:11            no date
-  AT-0082  2026-10-07-standup.md:10                        no date
-  AT-0095  2026-10-12-billing-post-cutover.md:12           no date
-  AT-0098  2026-10-13-quote-portal-weekly.md:12            no date
-  AT-0100  2026-10-14-acme-renewal-wrapup.md:10            unresolved "November" (vague)
-  AT-0101  2026-10-14-acme-renewal-wrapup.md:12            no date
-  AT-0102  2026-10-03-sales-pipeline.md:6                  unresolved "Friday" (no_meeting_date)
-  AT-0103  2026-10-03-sales-pipeline.md:7                  no date
-  AT-0104  untitled.md:1                                   no date
-  AT-0105  untitled.md:2                                   unresolved "Friday" (no_meeting_date)
-Possible duplicates (6):
-  AT-0031 ~ AT-0008  same task+owner, due differs (no date vs 2026-09-07)
-  AT-0048 ~ AT-0022  same task+owner, due differs (2026-09-28 vs no date)
-  AT-0047 ~ AT-0023  same task+owner, due differs (2026-10-02 vs 2026-09-30)
-  AT-0041 ~ AT-0024  same task+owner, due differs (2026-09-24 vs 2026-09-17)
-  AT-0043 ~ AT-0026  same task+owner, due differs (2026-09-23 vs no date)
-  AT-0101 ~ AT-0054  same task+owner, due differs (no date vs 2026-10-02)
+  AT-0034  2026-09-18-design-review.md:14                  no date
+  AT-0035  2026-09-18-design-review.md:15                  no date
+  AT-0039  2026-09-21-incident-review.md:17                no date
+  AT-0044  2026-09-23-standup.md:9                         no date
+  AT-0052  2026-09-28-acme-renewal-checkin.md:11           no date
+  AT-0057  2026-09-29-billing-cutover-planning.md:12 (+1)  no date
+  AT-0061  2026-09-30-q4-offsite.md:12                     unresolved "mid-October" (vague)
+  AT-0062  2026-09-30-q4-offsite.md:16                     no date
+  AT-0069  2026-10-01-quote-portal-weekly.md:12            no date
+  AT-0075  2026-10-05-onboarding-retro.md:12               no date
+  AT-0078  2026-10-06-quote-portal-weekly.md:11            no date
+  AT-0081  2026-10-07-standup.md:10                        no date
+  AT-0094  2026-10-12-billing-post-cutover.md:12           no date
+  AT-0097  2026-10-13-quote-portal-weekly.md:12            no date
+  AT-0099  2026-10-14-acme-renewal-wrapup.md:10            unresolved "November" (vague)
+  AT-0100  2026-10-03-sales-pipeline.md:6                  unresolved "Friday" (no_meeting_date)
+  AT-0101  2026-10-03-sales-pipeline.md:7                  no date
+  AT-0102  untitled.md:1                                   no date
+  AT-0103  untitled.md:2                                   unresolved "Friday" (no_meeting_date)
+Possible duplicates (4):
+  AT-0047 ~ AT-0022  same task+owner, due differs (2026-09-28 vs no date)
+  AT-0046 ~ AT-0023  same task+owner, due differs (2026-10-02 vs 2026-09-30)
+  AT-0040 ~ AT-0024  same task+owner, due differs (2026-09-24 vs 2026-09-17)
+  AT-0042 ~ AT-0026  same task+owner, due differs (2026-09-23 vs no date)
 Parsing failures (1):
   scratch.md  E-BINARY  contains binary data (NUL bytes or binary header); file skipped.
-Owner re-resolution (this run) (33):
+Owner re-resolution (this run) (31):
   AT-0001  2026-09-01-quote-portal-kickoff.md:9     resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
            note: merged/completed under an earlier owner resolution
   AT-0002  2026-09-01-quote-portal-kickoff.md:10    resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
            note: merged/completed under an earlier owner resolution
   AT-0005  2026-09-02-standup.md:9                  resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
   AT-0008  2026-09-03-billing-migration-sync.md:10  resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+           note: merged/completed under an earlier owner resolution
   AT-0009  2026-09-03-billing-migration-sync.md:11  resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
   AT-0011  2026-09-08-quote-portal-weekly.md:9      resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
            note: merged/completed under an earlier owner resolution
@@ -97,38 +94,41 @@ Owner re-resolution (this run) (33):
            note: merged/completed under an earlier owner resolution
   AT-0022  2026-09-14-onboarding-flow-design.md:11  resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
   AT-0026  2026-09-15-quote-portal-weekly.md:12     resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0031  2026-09-17-billing-migration-sync.md:12  resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0033  2026-09-18-design-review.md:12           resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0034  2026-09-18-design-review.md:13           resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0038  2026-09-21-incident-review.md:15         resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0039  2026-09-21-incident-review.md:16         resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0043  2026-09-22-quote-portal-weekly.md:12     resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0048  2026-09-24-onboarding-flow-design.md:12  resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0049  2026-09-25-qa-sync.md:9                  resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0050  2026-09-25-qa-sync.md:10                 resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0054  2026-09-28-acme-renewal-checkin.md:12    resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0067  2026-09-30-standup.md:12                 resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0068  2026-10-01-quote-portal-weekly.md:10     resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0032  2026-09-18-design-review.md:12           resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0033  2026-09-18-design-review.md:13           resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0037  2026-09-21-incident-review.md:15         resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0038  2026-09-21-incident-review.md:16         resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0042  2026-09-22-quote-portal-weekly.md:12     resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0047  2026-09-24-onboarding-flow-design.md:12  resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0048  2026-09-25-qa-sync.md:9                  resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0049  2026-09-25-qa-sync.md:10                 resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0053  2026-09-28-acme-renewal-checkin.md:12    resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
            note: merged/completed under an earlier owner resolution
-  AT-0074  2026-10-05-onboarding-retro.md:9         resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0076  2026-10-05-onboarding-retro.md:12        resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0077  2026-10-06-quote-portal-weekly.md:9      resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0066  2026-09-30-standup.md:12                 resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0067  2026-10-01-quote-portal-weekly.md:10     resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
            note: merged/completed under an earlier owner resolution
-  AT-0080  2026-10-06-quote-portal-weekly.md:12     resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0086  2026-10-09-security-review.md:19         resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0087  2026-10-09-security-review.md:20         resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0093  2026-10-12-billing-post-cutover.md:10    resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0095  2026-10-12-billing-post-cutover.md:12    resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
-  AT-0097  2026-10-13-quote-portal-weekly.md:11     resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
-  AT-0101  2026-10-14-acme-renewal-wrapup.md:12     resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
-Warnings (34): see --verbose
+  AT-0073  2026-10-05-onboarding-retro.md:9         resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0075  2026-10-05-onboarding-retro.md:12        resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0076  2026-10-06-quote-portal-weekly.md:9      resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+           note: merged/completed under an earlier owner resolution
+  AT-0079  2026-10-06-quote-portal-weekly.md:12     resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0085  2026-10-09-security-review.md:19         resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0086  2026-10-09-security-review.md:20         resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0092  2026-10-12-billing-post-cutover.md:10    resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
+  AT-0094  2026-10-12-billing-post-cutover.md:12    resolved -> ambiguous: "Rahul" -> Rahul Mehta | Rahul Verma
+  AT-0096  2026-10-13-quote-portal-weekly.md:11     resolved -> ambiguous: "Priya" -> Priya Nair | Priya Shah
+Warnings (32): see --verbose
   W-OWNER-NOW-AMBIGUOUS  2026-09-01-quote-portal-kickoff.md:9: owner 'Priya' now matches several people
       note: merged/completed under an earlier owner resolution
   W-OWNER-NOW-AMBIGUOUS  2026-09-01-quote-portal-kickoff.md:10: owner 'Rahul' now matches several people
       note: merged/completed under an earlier owner resolution
+  W-OWNER-NOW-AMBIGUOUS  2026-09-03-billing-migration-sync.md:10: owner 'Rahul' now matches several people
+      note: merged/completed under an earlier owner resolution
   W-OWNER-NOW-AMBIGUOUS  2026-09-08-quote-portal-weekly.md:9: owner 'Priya' now matches several people
       note: merged/completed under an earlier owner resolution
   W-OWNER-NOW-AMBIGUOUS  2026-09-14-onboarding-flow-design.md:10: owner 'Priya' now matches several people
+      note: merged/completed under an earlier owner resolution
+  W-OWNER-NOW-AMBIGUOUS  2026-09-28-acme-renewal-checkin.md:12: owner 'Priya' now matches several people
       note: merged/completed under an earlier owner resolution
   W-OWNER-NOW-AMBIGUOUS  2026-10-01-quote-portal-weekly.md:10: owner 'Rahul' now matches several people
       note: merged/completed under an earlier owner resolution
