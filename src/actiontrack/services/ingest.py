@@ -90,11 +90,14 @@ Section 4 public API (T-M5-07; spec 7.2, 10.1, 10.3, BR-04, BR-10, FR-01.12)
                                     ways to attach a source; ``resolve_item_owners(item, ctx, registry, cfg)``.
 ``FileCtx``, ``NewSource``, ``MatchResult``  the seam's data types.
 
-Section 5 public API (T-M5-08/09/22; spec 10.6, 10.6.1): ``match_or_create`` now does Tier-1b hook (``try_tier1b``,
-T-M5-10 extension point, returns None) -> Tier-1 merge (``merge_source(env, item_id, src)``) -> else new item +
+Section 5 public API (T-M5-08/09/10/11/22; spec 10.6, 10.6.1, 10.7.3): ``match_or_create`` now does Tier-1b
+(``try_tier1b``, T-M5-10: a done source completes all matching open items, evidence holder vs ``CI``) -> Tier-1 merge (``merge_source(env, item_id, src)``) -> else new item +
 ``possible_duplicate`` links (``MatchResult.links`` = ``(other_item_id, reason)`` pairs, ``possible_duplicates`` their
 count). ``recompute_canonical(repo, item_id, run_id)`` re-derives description/due/owners from the sources (call it after
 any source change); ``load_source_views(repo, item_id)``.
+T-M5-11: ``apply_status_effects(env, item_id, change: EvidenceChange | None) -> StatusEffects`` (reopen rule, sticky
+manual done; called by T-M5-12 per changed source row), ``manual_done_conflicts(repo) -> list[int]`` and
+``emit_status_conflicts(repo, run_id)`` (W-STATUS-CONFLICT whole-database pass, T-M5-14 step 4).
 
 Section 6 (interim) ``run_ingest(db_path, folder, *, cfg, run_ctx, recursive=True, dry_run=False,
 fault_hook=None, match=None, reingest=None) -> IngestResult``  discover -> session -> registry -> parse all ->
@@ -125,6 +128,14 @@ from actiontrack.domain.matching import (
     core_key,
     owner_person_set,
     pick_tier1,
+    pick_tier1b,
+)
+from actiontrack.domain.status import (
+    EvidenceChange,
+    ItemStatus,
+    conflicting_manual_done,
+    derive_status,
+    reopens,
 )
 from actiontrack.domain.models import (
     OwnerRole,
@@ -133,6 +144,7 @@ from actiontrack.domain.models import (
     ParsedItem,
     ParseWarning,
     ResolvedOwner,
+    format_item_id,
     ingest_order_key,
     parse_message,
 )
@@ -940,10 +952,62 @@ def _new_view(src: NewSource) -> NewView:
     )
 
 
+def _complete_from_note(
+    env: IngestEnv, item_id: int, evidence_source_id: int, where: str, raw_text: str, **extra: object
+) -> None:
+    """Set an open item done by note evidence (origin ``note``, ``completed_at`` NULL, evidence recorded) and
+    log ``status_changed`` citing the evidence (file:line and raw text). The status effect itself is decided by
+    ``domain.status.derive_status``; this only writes it."""
+    env.repo.touch_item(
+        item_id,
+        {
+            "status": "done",
+            "completion_origin": "note",
+            "completed_at": None,
+            "completion_evidence_source_id": evidence_source_id,
+        },
+    )
+    env.repo.record_event(
+        item_id,
+        "status_changed",
+        {"status": "open"},
+        {"status": "done", "completion_origin": "note", "evidence": where, "raw_text": raw_text, **extra},
+        env.run_id,
+    )
+
+
 def try_tier1b(env: IngestEnv, src: NewSource) -> MatchResult | None:
-    """EXTENSION POINT for T-M5-10 (Tier-1b completion match). Runs before Tier-1; returns a ``MatchResult``
-    when it handled the source, else None. Not implemented yet: always None."""
-    return None
+    """Tier-1b completion match (T-M5-10; spec 10.6, G-31). Runs before Tier-1; returns a ``MatchResult`` when it
+    handled the source, else None (the source then goes through Tier-1 / links).
+
+    A new ``[x]`` source completes EVERY open item that is the same obligation (``pick_tier1b``: identical
+    core of >= 3 tokens, no recurrence word, identical resolved owners, other file, within the window, the
+    done note not earlier than the item's latest source; the due date is ignored). The source is attached to the
+    evidence holder (the most recent matching item, ties by highest id): ``source_added`` + ``merged``
+    (``tier`` ``1b``) + ``status_changed`` events. Every other matching item becomes done through its own
+    ``status_changed`` event, an ``ItemLink completed_by`` (that item -> holder) and shows ``CI``. All of them
+    record the new source as ``completion_evidence_source_id``. Nothing is deleted or reopened and items that
+    are already done (manual or note) never match. ``MatchResult(outcome="merged")``: counted as merged."""
+    if src.item.checkbox_state != "done" or not src.core_tokens:
+        return None
+    repo = env.repo
+    new = _new_view(src)
+    candidates = [_load_item_view(repo, i) for i in repo.item_ids_by_core_key(src.core_key)]
+    found = pick_tier1b(new, candidates, window_days=env.cfg.limits.dup_window_days)
+    if found is None:
+        return None
+    holder = found.holder.item_id
+    f, it = src.file, src.item
+    where = f"{f.rel_path}:{it.line_start}"
+    source_id = add_source(env, holder, src)
+    repo.record_event(holder, "source_added", None, {"source": where, "source_id": source_id}, env.run_id)
+    repo.record_event(holder, "merged", None, {"source": where, "source_id": source_id, "tier": "1b"}, env.run_id)
+    _complete_from_note(env, holder, source_id, where, it.raw_text)
+    for other in found.others:
+        _complete_from_note(env, other.item_id, source_id, where, it.raw_text, completed_by=holder)
+        repo.insert_link(other.item_id, holder, "completed_by", None, env.run_id)
+    recompute_canonical(repo, holder, env.run_id)
+    return MatchResult(holder, source_id, "merged")
 
 
 def merge_source(env: IngestEnv, item_id: int, src: NewSource) -> MatchResult:
@@ -958,24 +1022,137 @@ def merge_source(env: IngestEnv, item_id: int, src: NewSource) -> MatchResult:
     repo.record_event(item_id, "source_added", None, {"source": where, "source_id": source_id}, env.run_id)
     repo.record_event(item_id, "merged", None, {"source": where, "source_id": source_id, "tier": "1"}, env.run_id)
     if prior.status == "open" and it.checkbox_state == "done":
-        repo.touch_item(
-            item_id,
-            {
-                "status": "done",
-                "completion_origin": "note",
-                "completed_at": None,
-                "completion_evidence_source_id": source_id,
-            },
-        )
-        repo.record_event(
-            item_id,
-            "status_changed",
-            {"status": "open"},
-            {"status": "done", "completion_origin": "note", "evidence": where, "raw_text": it.raw_text},
-            env.run_id,
-        )
+        _complete_from_note(env, item_id, source_id, where, it.raw_text)
     recompute_canonical(repo, item_id, env.run_id)
     return MatchResult(item_id, source_id, "merged")
+
+
+# --------------------------------------------------------------------------- status effects (T-M5-11)
+#
+# ``apply_status_effects`` is called by changed-file reconciliation (T-M5-12) AFTER it has updated the changed
+# ``ItemSource`` row (checkbox, ``present``) and its meeting date, once per (item, changed source row). The pairing
+# step describes the row with an ``EvidenceChange`` (``domain.status``). Decisions are pure (``derive_status``,
+# ``reopens``); this function only writes them. Manual done is never touched (a contradicting ``[ ]`` is the
+# whole-database ``W-STATUS-CONFLICT`` pass below). Evidence-line removal never reopens (G-C24).
+
+
+@dataclass(frozen=True, slots=True)
+class StatusEffects:
+    """What ``apply_status_effects`` did: items reopened (holder first, then its dependents, ascending id)
+    and whether the item itself became done."""
+
+    reopened: tuple[int, ...] = ()
+    completed: bool = False
+
+
+def _item_status(row: object) -> ItemStatus:
+    return ItemStatus(
+        getattr(row, "status"),
+        getattr(row, "completion_origin"),
+        getattr(row, "completion_evidence_source_id"),
+    )
+
+
+def _source_location(repo: Repo, source_id: int) -> tuple[int, str, int]:
+    """``(source_file_id, rel_path, line_start)`` of an item source."""
+    s = repo.get_item_source(source_id)
+    assert s is not None
+    f = repo.get_source_file_by_id(s.source_file_id)
+    assert f is not None
+    return s.source_file_id, f.rel_path, s.line_start
+
+
+def _reopen(env: IngestEnv, item_id: int, evidence_source_id: int, *, inferred_from: int | None = None) -> None:
+    repo = env.repo
+    sf_id, rel, line = _source_location(repo, evidence_source_id)
+    where = f"{rel}:{line}"
+    repo.touch_item(
+        item_id,
+        {"status": "open", "completion_origin": None, "completed_at": None, "completion_evidence_source_id": None},
+    )
+    after: dict[str, object] = {"status": "open", "reopened_by": where}
+    if inferred_from is not None:
+        after["reopened_with"] = inferred_from
+    repo.record_event(
+        item_id, "status_changed", {"status": "done", "completion_origin": "note"}, after, env.run_id
+    )
+    repo.add_warning(
+        env.run_id,
+        codes.W_STATUS_REOPENED,
+        _warning_message(codes.W_STATUS_REOPENED, rel, line, item=format_item_id(item_id)),
+        source_file_id=sf_id,
+        line=line,
+    )
+
+
+def apply_status_effects(env: IngestEnv, item_id: int, change: EvidenceChange | None = None) -> StatusEffects:
+    """Apply the status effect of one changed source row to ``item_id`` (see the section comment).
+
+    * manual done: nothing, ever;
+    * note completion: reopened iff ``domain.status.reopens`` (same source row as the evidence, now ``[ ]``,
+      later-dated); then every item completed from that evidence (``completed_by`` links to this item, done,
+      origin ``note``, same evidence source) is reopened too, each with its own ``status_changed`` event and
+      ``W-STATUS-REOPENED``; any other change leaves it done;
+    * open item: becomes done (origin ``note``, evidence = the changed source) only when ``derive_status``
+      (latest present source is ``[x]``) says so AND that source is the changed one. An open item is never
+      completed as a side effect of an unrelated edit, and a reopened item is not re-derived in the same step."""
+    if change is None:
+        return StatusEffects()
+    repo = env.repo
+    row = repo.get_action_item(item_id)
+    assert row is not None, f"unknown action item {item_id}"
+    state = _item_status(row)
+    if state.is_manual_done:
+        return StatusEffects()
+    if state.is_note_done:
+        if not reopens(state, change):
+            return StatusEffects()
+        evidence = state.evidence_source_id
+        assert evidence is not None
+        dependents = [
+            link.from_item_id
+            for link in repo.links_of(item_id)
+            if link.kind == "completed_by" and link.to_item_id == item_id
+        ]
+        reopened = [item_id]
+        _reopen(env, item_id, evidence)
+        for dep_id in sorted(set(dependents)):
+            dep = repo.get_action_item(dep_id)
+            if dep is not None and _item_status(dep).is_note_done and dep.completion_evidence_source_id == evidence:
+                _reopen(env, dep_id, evidence, inferred_from=item_id)
+                reopened.append(dep_id)
+        return StatusEffects(tuple(reopened))
+    decision = derive_status(state, load_source_views(repo, item_id))
+    if decision.status == "done" and decision.evidence_source_id == change.source_id:
+        _, rel, line = _source_location(repo, change.source_id)
+        src_row = repo.get_item_source(change.source_id)
+        assert src_row is not None
+        _complete_from_note(env, item_id, change.source_id, f"{rel}:{line}", src_row.raw_text)
+        return StatusEffects(completed=True)
+    return StatusEffects()
+
+
+def manual_done_conflicts(repo: Repo) -> list[int]:
+    """Ids (ascending) of manual-done items whose latest present source is ``[ ]`` (10.7.9 b, AC-03.6). Whole
+    database, independent of file hashes; read-only."""
+    out: list[int] = []
+    for row in repo.list_action_items(status="done"):
+        state = _item_status(row)
+        if state.is_manual_done and conflicting_manual_done(state, load_source_views(repo, row.id)):
+            out.append(row.id)
+    return out
+
+
+def emit_status_conflicts(repo: Repo, run_id: int) -> list[int]:
+    """Write one ``W-STATUS-CONFLICT`` run warning per conflicting manual-done item (once per run per item,
+    also when its note is unchanged) and return their ids. Called by the finalisation (T-M5-14 step 4)."""
+    ids = manual_done_conflicts(repo)
+    already = {w.message for w in repo.list_warnings(run_id) if w.code == codes.W_STATUS_CONFLICT}
+    for item_id in ids:
+        message = codes.REGISTRY[codes.W_STATUS_CONFLICT].format(item=format_item_id(item_id))
+        if message not in already:
+            repo.add_warning(run_id, codes.W_STATUS_CONFLICT, message)
+    return ids
 
 
 def match_or_create(env: IngestEnv, src: NewSource) -> MatchResult:

@@ -22,7 +22,10 @@ Sections (later tasks append their own, keeping this docstring's API list curren
    that applies to a pair, unordered), ``classify_pair(new, item, *, window_days, fuzzy_threshold)
    -> ItemLinkReason | None`` (exactly one stored reason or None; ``fuzzy`` for a non-identical core),
    ``fuzzy_match``.
-4. Tier-1b (T-M5-10), 5. edited-in-place pairing (T-M5-12): planned, appended below.
+4. Tier-1b completion match (T-M5-10) -- implemented: ``Tier1bMatch(holder, others)``, ``tier1b_applies(new, item,
+   *, window_days)``, ``pick_tier1b(new, items, *, window_days) -> Tier1bMatch | None`` (holder = most recent
+   matching item, ties by highest item id).
+5. Edited-in-place pairing (T-M5-12): planned, appended below.
 """
 
 from __future__ import annotations
@@ -316,3 +319,54 @@ def classify_pair(
         if reason in applicable:
             return reason
     return None
+
+
+# =========================================================================== 4. Tier-1b completion match (10.6, G-31)
+
+
+@dataclass(frozen=True, slots=True)
+class Tier1bMatch:
+    """Outcome of ``pick_tier1b``: the evidence holder and the other matching open items (ascending id)."""
+
+    holder: ItemView
+    others: tuple[ItemView, ...]
+
+    @property
+    def items(self) -> tuple[ItemView, ...]:
+        return (*self.others, self.holder)
+
+
+def _latest_sort_key(item: ItemView) -> tuple[bool, date, int]:
+    """Ascending recency: dated before undated, then date, then item id (so ``max`` = the most recent)."""
+    latest = _latest_date(item)
+    return (latest is None, latest or date.min, item.item_id)
+
+
+def tier1b_applies(new: NewView, item: ItemView, *, window_days: int) -> bool:
+    """One open item is part of the Tier-1b obligation of a new ``[x]`` source (10.6 Tier-1b).
+
+    Holds when: the new source is done and the item open; core identical, >= 3 tokens, no recurrence word,
+    every owner resolved with identical person sets, different file and within ``window_days`` of the
+    item's latest source (Tier-1 conditions 1, 2, 3, 6); the done source's meeting date is NOT earlier than
+    that latest source date. The due date (condition 4) is ignored and condition 5 is replaced by
+    "existing open + new done". An item with an unresolved owner never matches (AC-07.14)."""
+    if new.status != "done" or item.status != "open":
+        return False
+    if set(tier1_failures(new, item, window_days=window_days)) - {4, 5}:
+        return False
+    latest = _latest_date(item)
+    return new.meeting_date is not None and latest is not None and new.meeting_date >= latest
+
+
+def pick_tier1b(new: NewView, items: Iterable[ItemView], *, window_days: int) -> Tier1bMatch | None:
+    """Every matching open item, split into the evidence holder and the rest.
+
+    The holder is the MOST RECENT matching item: latest source meeting date, ties by the highest item id.
+    ``others`` (ascending id) are the items whose completion is only inferred (``completed_by`` -> holder,
+    flag ``CI``). Returns None when nothing matches."""
+    matching = [i for i in items if tier1b_applies(new, i, window_days=window_days)]
+    if not matching:
+        return None
+    holder = max(matching, key=_latest_sort_key)
+    others = tuple(sorted((i for i in matching if i is not holder), key=lambda i: i.item_id))
+    return Tier1bMatch(holder, others)

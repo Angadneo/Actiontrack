@@ -1211,6 +1211,16 @@ class Repo:
             )
         return diff
 
+    def set_manual_done(self, item_id: int, ts: str | None = None, run_id: int | None = None) -> None:
+        """Mark an item manually done (``completion_origin='manual'``, ``completed_at`` = ``ts`` or now, event
+        ``manual_done``). Used by tests until the ``done`` command (M6) owns the real write path."""
+        row = self.get_action_item(item_id)
+        if row is None:
+            raise InternalError(f"unknown action item {item_id}")
+        stamp = ts or self.now_iso()
+        self.touch_item(item_id, {"status": "done", "completion_origin": "manual", "completed_at": stamp})
+        self.record_event(item_id, "manual_done", {"status": row.status}, {"status": "done", "completed_at": stamp}, run_id)
+
     # ----------------------------------------------------------- ingest_warning
     def add_warning(
         self, run_id: int, code: str, message: str, *, source_file_id: int | None = None, line: int | None = None

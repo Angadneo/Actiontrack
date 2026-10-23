@@ -54,10 +54,9 @@ def sample(tmp_path_factory):
 
 # cluster core key -> (items, sorted sources per item, link reasons among the cluster's items)
 #
-# THIS TABLE IS DELIBERATELY PRE-T-M5-10: the 11 Tier-1b clusters (everything from "approve q4 cloud spend" to
-# "write acceptance tests signup flow" except the 6 due-differs clusters and the freeze pair) currently get
-# whatever Tier-1 row 5 / links give. When T-M5-10 (Tier-1b) lands these rows change on purpose: the dateless
-# [x] source then joins an evidence holder, the earlier open copies become done, and `completed_by` links appear.
+# Final since T-M5-10 (Tier-1b): the dateless [x] source joins the evidence holder (the most recent matching open
+# item), the earlier open copies become done with a `completed_by` link; see tests/integration/test_tier1b_sample.py
+# for statuses, holders, `CI` and evidence. Here: items, sources per item, possible_duplicate reasons.
 D = ["due_differs"]
 CLUSTERS = {
     # --- Tier-1 merge (AC-07.12)
@@ -69,18 +68,19 @@ CLUSTERS = {
     "estimate sso work": (2, [1, 1], D),
     "prepare renewal one pager": (2, [1, 1], D),
     "collect 5 customer quotes landing page": (2, [1, 1], D),
-    # --- 11 Tier-1b clusters, current (pre-T-M5-10) outcome
-    "send revised quote acme": (3, [1, 1, 1], D * 3),  # [x] undated vs two dated opens: due_differs x3
-    "confirm cloud budget with finance": (2, [1, 2], D),  # 09-01 open + 09-22 [x] both undated: Tier-1 row 5 merge
-    "set up staging environment": (2, [1, 1], D),
-    "export last quarter invoices": (2, [1, 1], D),
-    "finalise welcome email copy": (3, [1, 1, 1], D * 3),
-    "write acceptance tests signup flow": (2, [1, 1], D),
-    "book renewal call with acmes cto": (2, [1, 2], D),  # 09-10 open + 10-14 [x] both undated: Tier-1 merge
-    "send acme procurement form": (2, [1, 1], D),
-    "deploy beta staging": (3, [1, 1, 1], D * 3),
-    "approve q4 cloud spend": (2, [1, 1], D),
-    "notify customers about maintenance window": (2, [1, 1], D),
+    # --- 11 Tier-1b clusters (T-M5-10): 2-open clusters keep the pre-existing due_differs link between the two
+    # open items; every [x] source is attached to the holder (the most recent matching item)
+    "send revised quote acme": (2, [1, 2], D),
+    "confirm cloud budget with finance": (2, [1, 2], D),
+    "set up staging environment": (1, [2], []),
+    "export last quarter invoices": (1, [2], []),
+    "finalise welcome email copy": (2, [1, 2], D),
+    "write acceptance tests signup flow": (1, [2], []),
+    "book renewal call with acmes cto": (2, [1, 2], D),
+    "send acme procurement form": (1, [2], []),
+    "deploy beta staging": (2, [1, 2], D),
+    "approve q4 cloud spend": (1, [2], []),
+    "notify customers about maintenance window": (1, [2], []),
 }
 
 
@@ -108,17 +108,22 @@ def test_only_identical_core_clusters_have_multiple_sources_and_links_are_due_di
     db = sample[0]
     multi = {r["core_key"] for r in q(db, "SELECT core_key FROM item_source GROUP BY core_key HAVING count(*) > 1")}
     assert multi == set(CLUSTERS)
-    assert Counter(r["reason"] for r in q(db, "SELECT reason FROM item_link")) == {"due_differs": 23}
+    assert Counter(r["reason"] for r in q(db, "SELECT reason FROM item_link WHERE kind = 'possible_duplicate'")) == {
+        "due_differs": 11
+    }
+    assert q(db, "SELECT count(*) FROM item_link WHERE kind = 'completed_by'")[0][0] == 5
 
 
 def test_totals_and_symmetric_storage(sample):
     db, res, captured, _ = sample
     assert q(db, "SELECT count(*) FROM item_source")[0][0] == 117
-    assert q(db, "SELECT count(*) FROM action_item")[0][0] == 114
-    assert res.counters.items_merged == 3 and res.counters.possible_duplicates == 23
-    assert all(r["from_item_id"] < r["to_item_id"] for r in q(db, "SELECT * FROM item_link"))
+    assert q(db, "SELECT count(*) FROM action_item")[0][0] == 105
+    assert res.counters.items_merged == 12 and res.counters.possible_duplicates == 11  # freeze + 11 Tier-1b
+    assert all(
+        r["from_item_id"] < r["to_item_id"] for r in q(db, "SELECT * FROM item_link WHERE kind = 'possible_duplicate'")
+    )
     # links are reported through MatchResult, once, naming the OTHER (existing, lower-id) item
-    assert sum(r.possible_duplicates for r in captured) == 23
+    assert sum(r.possible_duplicates for r in captured) == 11
     for r in captured:
         assert r.possible_duplicates == len(r.links)
         assert all(other < r.item_id for other, _reason in r.links)  # new item 9 vs existing 3 stored as (3, 9)
@@ -152,7 +157,7 @@ def test_rerun_over_unchanged_folder_adds_no_links(sample, tmp_path):
     before = q(copy, "SELECT count(*) FROM item_link")[0][0]
     res = ingest(copy, folder)
     assert res.counters.files_unchanged == 33
-    assert q(copy, "SELECT count(*) FROM item_link")[0][0] == before == 23
+    assert q(copy, "SELECT count(*) FROM item_link")[0][0] == before == 16  # 11 possible_duplicate + 5 completed_by
 
 
 def test_insert_link_is_idempotent_and_symmetric(tmp_path):
@@ -230,19 +235,20 @@ def test_due_differs_beats_same_file(tmp_path):
 
 
 # ------------------------------------------------------------------------- Tier-1b boundary (T-M5-10)
-def test_tier1b_not_implemented_yet_done_source_is_tier1_row5_or_due_differs_link(tmp_path):
-    """T-M5-10 CHANGES THIS ON PURPOSE. Until Tier-1b lands, a dateless [x] copy of an earlier OPEN item with
-    a due date is only a ``due_differs`` link (two items, nothing completed); with both undated it is the
-    10.6.1 row 5 Tier-1 merge (one item, done, origin note, evidence = the [x] source)."""
+def test_tier1b_dateless_done_copy_completes_open_item_with_due_date_without_link(tmp_path):
+    """Since T-M5-10 a dateless [x] copy of an earlier OPEN item with a due date is a Tier-1b completion: one item
+    (the holder), done, no possible_duplicate link, no completed_by link (single match: no CI); with both undated
+    it is the 10.6.1 row 5 Tier-1 merge with the same visible outcome."""
     line = "Rahul Mehta to send revised quote"
     folder = tmp_path / "a" / "notes"
     write_note(folder, "2026-09-01-a.md", note("2026-09-01", f"- [ ] {line} to Acme by 2026-09-04"))
     write_note(folder, "2026-09-15-b.md", note("2026-09-15", f"- [x] {line} to Acme"))
     db = tmp_path / "a" / "t.db"
     ingest(db, folder)
-    assert [r["status"] for r in q(db, "SELECT status FROM action_item ORDER BY id")] == ["open", "done"]
-    assert [r["reason"] for r in q(db, "SELECT reason FROM item_link")] == ["due_differs"]
-    assert q(db, "SELECT count(*) FROM item_link WHERE kind = 'completed_by'")[0][0] == 0
+    (item,) = q(db, "SELECT * FROM action_item")
+    assert (item["status"], item["completion_origin"], item["completed_at"]) == ("done", "note", None)
+    assert q(db, "SELECT count(*) FROM item_link")[0][0] == 0
+    assert q(db, "SELECT count(*) FROM item_source")[0][0] == 2
 
     folder = tmp_path / "b" / "notes"
     write_note(folder, "2026-09-01-a.md", note("2026-09-01", f"- [ ] {line} to Acme"))
