@@ -25,7 +25,13 @@ Sections (later tasks append their own, keeping this docstring's API list curren
 4. Tier-1b completion match (T-M5-10) -- implemented: ``Tier1bMatch(holder, others)``, ``tier1b_applies(new, item,
    *, window_days)``, ``pick_tier1b(new, items, *, window_days) -> Tier1bMatch | None`` (holder = most recent
    matching item, ties by highest item id).
-5. Edited-in-place pairing (T-M5-12): planned, appended below.
+5. Changed-file pairing (T-M5-12, spec 10.7.2) -- implemented: ``OldSource`` / ``NewEntry`` (plain data),
+   ``Pair`` (``old_id``, ``new_index``, ``rule`` = ``hash`` | ``moved`` | ``edited``, ``score``),
+   ``PairingResult(pairs, new_only, old_only)`` (a 3-tuple), ``pair_sources(old, new) -> PairingResult`` (alias
+   ``pair_entries``), ``EDIT_JACCARD`` (0.6). Rules (a) same ``block_hash`` + ``occurrence_index``, (b) same cleaned
+   description, (c) same section heading and token Jaccard >= 0.6 greedy by highest score, then document
+   order of the new entry, then document order of the old row. Rows with ``present=False`` take part; at every
+   rule the ``present`` rows are tried first, so an identical present line is never stolen by a restored one.
 """
 
 from __future__ import annotations
@@ -370,3 +376,113 @@ def pick_tier1b(new: NewView, items: Iterable[ItemView], *, window_days: int) ->
     holder = max(matching, key=_latest_sort_key)
     others = tuple(sorted((i for i in matching if i is not holder), key=lambda i: i.item_id))
     return Tier1bMatch(holder, others)
+
+
+# =========================================================================== 5. Changed-file pairing (10.7.2, G-24)
+
+EDIT_JACCARD = 0.6
+"""10.7.2 (c): minimum token Jaccard of an in-place edit."""
+
+
+@dataclass(frozen=True, slots=True)
+class OldSource:
+    """An existing ``item_source`` row of the changed file (present or not), as plain data."""
+
+    source_id: int
+    block_hash: str
+    occurrence_index: int
+    description: str
+    section_heading: str | None
+    line_start: int
+    present: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class NewEntry:
+    """A freshly parsed item of the changed file (``index`` = position in document order)."""
+
+    index: int
+    block_hash: str
+    occurrence_index: int
+    description: str
+    section_heading: str | None
+    line_start: int
+
+
+@dataclass(frozen=True, slots=True)
+class Pair:
+    old_id: int
+    new_index: int
+    rule: str  # "hash" | "moved" | "edited"
+    score: float = 1.0
+
+
+class PairingResult(NamedTuple):
+    """``(pairs, new_only, old_only)``: ``pairs`` in new-entry order, ``new_only`` = new indexes without an old
+    row (ascending), ``old_only`` = old source ids without a new entry (ascending)."""
+
+    pairs: tuple[Pair, ...]
+    new_only: tuple[int, ...]
+    old_only: tuple[int, ...]
+
+
+def _old_order(o: OldSource) -> tuple[int, int]:
+    return (o.line_start, o.source_id)
+
+
+def pair_sources(old: Iterable[OldSource], new: Iterable[NewEntry]) -> PairingResult:
+    """Pair the parsed entries of a changed file with the file's existing sources (10.7.2 a-c, G-24).
+
+    Deterministic and one-to-one. Every rule runs over the ``present`` old rows first and then over the
+    ``present=False`` ones. (a) and (b) group by key and zip in document order (new entry order against the
+    old line order, ties by id); (c) is greedy over all candidate pairs sorted by ``(-score, new index, old
+    line, old id)``."""
+    olds = sorted(old, key=_old_order)
+    news = sorted(new, key=lambda e: e.index)
+    free_old: dict[int, OldSource] = {o.source_id: o for o in olds}
+    free_new: dict[int, NewEntry] = {e.index: e for e in news}
+    found: dict[int, Pair] = {}
+
+    def take(o: OldSource, e: NewEntry, rule: str, score: float) -> None:
+        found[e.index] = Pair(o.source_id, e.index, rule, score)
+        del free_old[o.source_id]
+        del free_new[e.index]
+
+    def keyed(rule: str, old_key, new_key) -> None:  # type: ignore[no-untyped-def]
+        for want_present in (True, False):
+            groups: dict[object, list[OldSource]] = {}
+            for o in olds:
+                if o.source_id in free_old and o.present is want_present:
+                    groups.setdefault(old_key(o), []).append(o)
+            for e in news:
+                if e.index not in free_new:
+                    continue
+                bucket = groups.get(new_key(e))
+                if bucket:
+                    take(bucket.pop(0), e, rule, 1.0)
+
+    keyed("hash", lambda o: (o.block_hash, o.occurrence_index), lambda e: (e.block_hash, e.occurrence_index))
+    keyed("moved", lambda o: o.description, lambda e: e.description)
+
+    old_tokens = {o.source_id: frozenset(core_tokens(o.description)) for o in olds}
+    new_tokens = {e.index: frozenset(core_tokens(e.description)) for e in news}
+    for want_present in (True, False):
+        cands: list[tuple[float, int, int, int, OldSource, NewEntry]] = []
+        for o in olds:
+            if o.source_id not in free_old or o.present is not want_present:
+                continue
+            for e in news:
+                if e.index in free_new and e.section_heading == o.section_heading:
+                    score = jaccard(old_tokens[o.source_id], new_tokens[e.index])
+                    if score >= EDIT_JACCARD:
+                        cands.append((-score, e.index, o.line_start, o.source_id, o, e))
+        cands.sort(key=lambda c: c[:4])
+        for neg, _ei, _ol, _oid, o, e in cands:
+            if o.source_id in free_old and e.index in free_new:
+                take(o, e, "edited", -neg)
+
+    pairs = tuple(found[i] for i in sorted(found))
+    return PairingResult(pairs, tuple(sorted(free_new)), tuple(sorted(free_old)))
+
+
+pair_entries = pair_sources

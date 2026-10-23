@@ -354,15 +354,22 @@ def test_changed_file_is_routed_to_the_reingest_seam(tmp_db_path, folder):
     assert res.counters.files_ingested == 1
 
 
-def test_changed_file_without_handler_is_isolated_not_lost(tmp_db_path, folder):
-    """Until T-M5-12 lands a changed file is reported failed and its previous data stays (10.7.8 spirit)."""
+def test_changed_file_is_reconciled_by_default_and_a_failing_handler_is_isolated(tmp_db_path, folder):
+    """T-M5-12: the default handler reconciles a changed file; a handler that raises isolates the file."""
     write_note(folder, "a.md", simple_note("2026-09-01", "A"))
     ingest(tmp_db_path, folder)
     before = dump(tmp_db_path)["action_item"]
     write_note(folder, "a.md", simple_note("2026-09-01", "A", ("- [ ] Rahul Mehta to book it",)))
-    res = ingest(tmp_db_path, folder)
+
+    def boom(env, entry, ordinal):
+        raise RuntimeError("boom")
+
+    res = ingest(tmp_db_path, folder, reingest=boom)
     assert res.counters.files_failed == 1 and res.exit_code == 5
     assert dump(tmp_db_path)["action_item"] == before
+    res = ingest(tmp_db_path, folder)
+    assert res.counters.files_failed == 0 and res.counters.files_ingested == 1
+    assert count(tmp_db_path, "action_item") == 2
 
 
 def test_bad_folder_aborts_before_any_write(tmp_path):

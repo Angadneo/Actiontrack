@@ -10,7 +10,7 @@ Sections
 2. Run lifecycle, lock, interrupted runs (T-M5-04)            -- implemented
 3. Per-file transaction engine / report counters (T-M5-05)     -- implemented
 4. Persisting a new file (T-M5-07)                             -- implemented
-5. Matching integration (T-M5-08/09/22) -- implemented; changed files, missing files (T-M5-10..13) -- later
+5. Matching integration (T-M5-08..11/22) -- implemented; 5b. changed files, missing files, source_state (T-M5-12/13) -- implemented
 6. Whole-database passes and finalisation (T-M5-14); interim driver ``run_ingest`` -- later / interim
 
 Section 1 public API (T-M5-03; spec FR-01.1, AC-01.1, 10.7.1, 10.7.5, BR-18, NFR-DET-01)
@@ -99,6 +99,13 @@ T-M5-11: ``apply_status_effects(env, item_id, change: EvidenceChange | None) -> 
 manual done; called by T-M5-12 per changed source row), ``manual_done_conflicts(repo) -> list[int]`` and
 ``emit_status_conflicts(repo, run_id)`` (W-STATUS-CONFLICT whole-database pass, T-M5-14 step 4).
 
+Section 5b public API (T-M5-12/13; spec 10.7.2-10.7.5, 10.7.8): ``reingest_file(env, entry, ordinal) -> FileWrite`` (the
+default ``IngestEnv.reingest``: pairing via ``domain.matching.pair_sources`` incl. ``present=0`` rows, edits, moves,
+removal, restore, status effects), ``recompute_source_state(repo, item_ids=None) -> list[int]`` (``missing`` iff all
+sources absent; call with None for the whole DB), ``mark_missing_files(env, rows) -> list[MissingOutcome]`` (rows =
+``FilePlan.missing``; ``run_ingest`` calls it after ``process_plan`` and returns it as ``IngestResult.missing``).
+Fault points: ``reingest_paired|removed|new[:rel]``, ``missing_start|written[:rel]``.
+
 Section 6 (interim) ``run_ingest(db_path, folder, *, cfg, run_ctx, recursive=True, dry_run=False,
 fault_hook=None, match=None, reingest=None) -> IngestResult``  discover -> session -> registry -> parse all ->
 plan -> ``process_plan`` -> finish. ``IngestResult.exit_code`` is 5 when a file failed, else 0.
@@ -111,7 +118,7 @@ import dataclasses
 import enum
 import os
 import traceback
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 
@@ -124,9 +131,12 @@ from actiontrack.domain.matching import (
     ItemView,
     NewView,
     all_resolved,
+    NewEntry,
+    OldSource,
     classify_pair,
     core_key,
     owner_person_set,
+    pair_sources,
     pick_tier1,
     pick_tier1b,
 )
@@ -155,7 +165,7 @@ from actiontrack.parsing.owner_phrase import OwnerAnalyzer
 from actiontrack.resolution.owners import MeetingContext, resolve_attendees, resolve_owner
 from actiontrack.resolution.people import PeopleRegistry, file_transaction, known_name_predicate
 from actiontrack.store.db import Database
-from actiontrack.store.repo import IngestRunRow, Repo, SourceFileRow
+from actiontrack.store.repo import IngestRunRow, ItemSourceRow, Repo, SourceFileRow, to_storage_text
 
 # =============================================================================================
 # SECTION 1 -- Ordering and the file plan (T-M5-03)
@@ -638,9 +648,7 @@ def process_entry(env: IngestEnv, entry: PlanEntry, ordinal: int) -> FileOutcome
     def handler(e: IngestEnv, en: PlanEntry, n: int) -> FileWrite:
         if not has_data:
             return persist_new_file(e, en, n)
-        if e.reingest is None:
-            raise NotImplementedError("re-ingesting a changed file is implemented by T-M5-12")
-        return e.reingest(e, en, n)
+        return (e.reingest or reingest_file)(e, en, n)
 
     rel = parsed.rel_path
     try:
@@ -891,21 +899,32 @@ def load_source_views(repo: Repo, item_id: int) -> list[SourceView]:
     return out
 
 
-def recompute_canonical(repo: Repo, item_id: int, run_id: int | None) -> dict[str, tuple[object, object]]:
+def recompute_canonical(
+    repo: Repo,
+    item_id: int,
+    run_id: int | None,
+    fresh_owners: Mapping[int, Sequence[ResolvedOwner]] | None = None,
+) -> dict[str, tuple[object, object]]:
     """Re-derive an item's canonical description / task text / core key / due / owners from its sources
     (``domain.canonical.select_canonical``) and write them through ``touch_item`` (T-M5-22).
 
     ``updated_at`` moves only when something changed; events: ``updated_from_source`` (description / due) and
     ``owner_changed`` (owners, before/after). ``status`` is never written here (module docstring of
     ``canonical``). Owner ``candidates`` (not stored per source) are carried over from the current item rows
-    when the phrase is unchanged. Returns what changed (idempotent: a second call returns ``{}``)."""
+    when the phrase is unchanged, or taken from ``fresh_owners`` (``{source_id: resolved owners}`` of a source
+    that was just re-resolved). Returns what changed (idempotent: a second call returns ``{}``)."""
     views = load_source_views(repo, item_id)
     if not views:
         return {}
     sel = select_canonical(views)
     current = repo.list_item_owners(item_id)
 
+    fresh = list(fresh_owners.get(sel.driver_source_id, ())) if fresh_owners else []
+
     def carry(o: OwnerView) -> OwnerView:
+        for r in fresh:  # a just-resolved owner of the driving source brings its candidates (T-M5-12)
+            if (r.owner_raw, _s(r.role), r.person_id, _s(r.status)) == (o.owner_raw, o.role, o.person_id, o.status):
+                return OwnerView(o.owner_raw, o.role, o.person_id, o.status, o.provenance, tuple(r.candidates))
         for row in current:
             if (row.owner_raw, row.role, row.person_id, row.owner_status) == (
                 o.owner_raw,
@@ -1187,6 +1206,42 @@ def match_or_create(env: IngestEnv, src: NewSource) -> MatchResult:
     return MatchResult(result.item_id, result.source_id, "new", len(links), tuple(links))
 
 
+def _emit_item_warnings(
+    env: IngestEnv,
+    sf_id: int,
+    rel: str,
+    item: ParsedItem,
+    owners: Sequence[ResolvedOwner],
+    owner_warnings: Sequence[tuple[str, str]],
+) -> None:
+    """Run-scoped warnings of one item's owner resolution (W-OWNER-MISSING, W-NAME-DIACRITIC, ...)."""
+    repo = env.repo
+    for code, task in owner_warnings:
+        repo.add_warning(
+            env.run_id,
+            code,
+            _warning_message(code, rel, item.line_start, task=task),
+            source_file_id=sf_id,
+            line=item.line_start,
+        )
+    for owner in owners:
+        for code in owner.warnings:
+            other = env.registry.full_name(owner.person_id) if owner.person_id else ""
+            repo.add_warning(
+                env.run_id,
+                code,
+                _warning_message(code, rel, item.line_start, name=owner.owner_raw, other=other),
+                source_file_id=sf_id,
+                line=item.line_start,
+            )
+
+
+def _new_source(fctx: FileCtx, item: ParsedItem, owners: Sequence[ResolvedOwner]) -> NewSource:
+    key = core_key(item.task_text, fallback=item.description)
+    due = item.due_hook if isinstance(item.due_hook, DueResult) else None
+    return NewSource(fctx, item, tuple(owners), due, key.key, key.tokens)
+
+
 def persist_new_file(env: IngestEnv, entry: PlanEntry, ordinal: int) -> FileWrite:
     """Persist a file that has no stored data yet (see the section comment). Runs inside the file transaction."""
     parsed, prev, repo, registry = entry.parsed, entry.previous, env.repo, env.registry
@@ -1226,27 +1281,8 @@ def persist_new_file(env: IngestEnv, entry: PlanEntry, ordinal: int) -> FileWrit
     matcher = env.match or match_or_create
     totals = {"new": 0, "merged": 0, "dups": 0, "done": 0}
     for item, (owners, owner_warnings) in zip(parsed.items, per_item, strict=True):
-        for code, task in owner_warnings:
-            repo.add_warning(
-                env.run_id,
-                code,
-                _warning_message(code, rel, item.line_start, task=task),
-                source_file_id=sf_id,
-                line=item.line_start,
-            )
-        for owner in owners:
-            for code in owner.warnings:
-                other = registry.full_name(owner.person_id) if owner.person_id else ""
-                repo.add_warning(
-                    env.run_id,
-                    code,
-                    _warning_message(code, rel, item.line_start, name=owner.owner_raw, other=other),
-                    source_file_id=sf_id,
-                    line=item.line_start,
-                )
-        key = core_key(item.task_text, fallback=item.description)
-        due = item.due_hook if isinstance(item.due_hook, DueResult) else None
-        result = matcher(env, NewSource(fctx, item, owners, due, key.key, key.tokens))
+        _emit_item_warnings(env, sf_id, rel, item, owners, owner_warnings)
+        result = matcher(env, _new_source(fctx, item, owners))
         totals["new" if result.outcome == "new" else "merged"] += 1
         totals["dups"] += result.possible_duplicates
         totals["done"] += item.checkbox_state == "done"
@@ -1271,6 +1307,379 @@ def persist_new_file(env: IngestEnv, entry: PlanEntry, ordinal: int) -> FileWrit
 
 
 # =============================================================================================
+# SECTION 5b -- Changed files, removed/restored lines, missing files, source_state (T-M5-12/13)
+# =============================================================================================
+#
+# ``reingest_file`` (default ``IngestEnv.reingest``, runs inside the file transaction) reconciles a CHANGED file:
+#
+#   1. meeting row (date / source / title) and attendees (replaced only when the raw-name list changed);
+#   2. ``domain.matching.pair_sources`` pairs the parsed entries with ALL of the file's ``item_source`` rows,
+#      ``present=0`` ones included (10.7.2 a-c, G-24);
+#   3. paired rows are rewritten from the note (lines, raw text / hash, checkbox, description, task text, core
+#      key, due, owners). A pure move (lines only) writes only the row: no event, the item is untouched. An edit
+#      goes through ``recompute_canonical`` (one ``updated_from_source`` event when a canonical field moved, else
+#      one source-level ``updated_from_source`` event); a ``present=0`` row that is paired is REVIVED
+#      (``present=1``, event ``source_added`` with ``restored``) and never becomes a new item or a ``same_file`` link;
+#   4. a checkbox change (or a revival) is handed to ``apply_status_effects`` with an ``EvidenceChange`` carrying
+#      the old and new meeting date (reopen rule 10.7.3, sticky manual done);
+#   5. unpaired old rows become ``present=0`` (event ``source_removed``; rows are never deleted);
+#   6. unpaired new entries go through the matcher seam as new sources (Tier-1b / Tier-1 / links);
+#   7. ``recompute_source_state`` for every item whose sources changed; the file's hash is written LAST.
+#
+# Owners of a pair are re-resolved (the normal owner path) unless the pair is a verbatim (a) match and the
+# attendee list did not change: identical text never fights the whole-database re-resolution pass (10.7.9).
+# Not redone for paired entries: Tier-1b / duplicate matching (documented simplification).
+#
+# Fault points (``db.fault``): ``reingest_paired[:<rel>]`` after the paired rows were written,
+# ``reingest_removed[:<rel>]`` after the removals, ``reingest_new[:<rel>]`` after the new entries (before the
+# hash); plus the engine's ``file_start`` / ``file_written``. Any exception rolls back the whole file.
+
+_DUE_KEYS = ("due_raw", "due_raw_other", "due_date", "due_confidence", "due_rule", "due_reason")
+_CONTENT_KEYS = ("checkbox_state", "description", "task_text", "core_key", *_DUE_KEYS)
+
+
+def _full_due(due: DueResult | None) -> dict[str, object]:
+    """All six due columns (explicit ``None`` where absent) so an update clears stale values."""
+    cols = _due_columns(due)
+    return {k: cols.get(k) for k in _DUE_KEYS} | {"due_confidence": cols.get("due_confidence", "none")}
+
+
+def _norm(value: object, raw: bool = False) -> object:
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, str) and not raw:
+        return to_storage_text(value)
+    return value
+
+
+def _json_value(value: object) -> object:
+    return value.isoformat() if isinstance(value, date) else value
+
+
+@dataclass(slots=True)
+class _ItemChange:
+    """What happened to one item's sources in a changed file."""
+
+    content: dict[str, tuple[object, object]] = dataclasses.field(default_factory=dict)
+    sources: list[int] = dataclasses.field(default_factory=list)
+    revived: list[int] = dataclasses.field(default_factory=list)
+    removed: list[int] = dataclasses.field(default_factory=list)
+    status_changes: list[EvidenceChange] = dataclasses.field(default_factory=list)
+    fresh: dict[int, tuple[ResolvedOwner, ...]] = dataclasses.field(default_factory=dict)
+    event_source: int | None = None
+
+
+def _update_paired_source(
+    env: IngestEnv,
+    row: ItemSourceRow,
+    it: ParsedItem,
+    resolved: tuple[tuple[ResolvedOwner, ...], tuple[tuple[str, str], ...]] | None,
+    old_date: date | None,
+    new_date: date | None,
+    rel: str,
+    ch: _ItemChange,
+) -> None:
+    """Rewrite one paired ``item_source`` row from the note and record what changed in ``ch``."""
+    repo = env.repo
+    due = it.due_hook if isinstance(it.due_hook, DueResult) else None
+    key = core_key(it.task_text, fallback=it.description)
+    new_cols: dict[str, object] = {
+        "line_start": it.line_start,
+        "line_end": it.line_end,
+        "raw_text": it.raw_text,
+        "section_heading": it.section_heading,
+        "occurrence_index": it.occurrence_index,
+        "block_hash": it.block_hash,
+        "checkbox_state": it.checkbox_state,
+        "description": it.description,
+        "task_text": it.task_text,
+        "core_key": key.key,
+        **_full_due(due),
+    }
+    diff: dict[str, object] = {}
+    content: dict[str, tuple[object, object]] = {}
+    for column, new in new_cols.items():
+        old = getattr(row, column)
+        if _norm(old, column == "raw_text") != _norm(new, column == "raw_text"):
+            diff[column] = new
+            if column in _CONTENT_KEYS:
+                content[column] = (old, new)
+    revived = not row.present
+    if revived:
+        diff["present"] = True
+    diff["last_seen_run"] = env.run_id
+    repo.update_item_source(row.id, **diff)
+    ch.sources.append(row.id)
+    if resolved is not None:
+        owners = resolved[0]
+        before = [o.owner_raw for o in repo.list_source_owners(row.id)]
+        if repo.set_source_owners(row.id, owners):
+            content["owners"] = (before, [o.owner_raw for o in owners])
+        ch.fresh[row.id] = tuple(owners)
+    if content:
+        ch.event_source = ch.event_source or row.id
+        for k, v in content.items():
+            ch.content.setdefault(k, v)
+    if revived:
+        ch.revived.append(row.id)
+        repo.record_event(
+            row.item_id,
+            "source_added",
+            None,
+            {"source": f"{rel}:{it.line_start}", "source_id": row.id, "note": "restored"},
+            env.run_id,
+        )
+    if revived or "checkbox_state" in content:
+        ch.status_changes.append(EvidenceChange(row.id, it.checkbox_state, old_date, new_date, True))
+
+
+def reingest_file(env: IngestEnv, entry: PlanEntry, ordinal: int) -> FileWrite:
+    """Reconcile a changed file with its stored data (section comment above). Runs inside the file transaction."""
+    parsed, prev, repo, registry = entry.parsed, entry.previous, env.repo, env.registry
+    assert prev is not None, "reingest_file needs a stored source_file row"
+    meeting = parsed.meeting
+    assert meeting is not None, "an 'ok' parse result always carries a meeting"
+    rel, sf_id = parsed.rel_path, prev.id
+    stored_meeting = repo.get_meeting_for_file(sf_id)
+    assert stored_meeting is not None, "reingest_file needs a stored meeting row"
+    meeting_id = stored_meeting.id
+
+    # 1. meeting row and attendees
+    wanted = {"meeting_date": meeting.date, "date_source": meeting.date_source, "title": meeting.title}
+    changed_meeting = {k: v for k, v in wanted.items() if _norm(getattr(stored_meeting, k)) != _norm(v)}
+    if changed_meeting:
+        repo.update_meeting(meeting_id, **changed_meeting)
+    stored_att = repo.list_attendees(meeting_id)
+    names_changed = {r["raw_name"] for r in stored_att} != {to_storage_text(a.raw_name) for a in meeting.attendees}
+    att = None
+    if names_changed:
+        att = resolve_attendees(meeting.attendees, registry, ordinal=ordinal)
+        mctx = att.context()
+        repo.persist_registry(registry)
+        repo.replace_attendees(meeting_id, [(r.raw_name, r.person_id, r.email_hint) for r in att.refs])
+    else:  # keep the stored (possibly pass-refreshed) person ids: nothing to re-resolve
+        ids = frozenset(r["person_id"] for r in stored_att if r["person_id"])
+        mctx = MeetingContext(ids if stored_att else None)
+    for w in parsed.warnings:
+        repo.add_warning(env.run_id, w.code, w.message, source_file_id=sf_id, line=w.line)
+    if meeting.date is not None and meeting.date > env.today:
+        repo.add_warning(
+            env.run_id,
+            codes.W_MEETING_DATE_FUTURE,
+            _warning_message(codes.W_MEETING_DATE_FUTURE, rel, date=meeting.date.isoformat(), today=env.today.isoformat()),
+            source_file_id=sf_id,
+        )
+    if att is not None:
+        for ref in att.refs:
+            for code in ref.warnings:
+                repo.add_warning(env.run_id, code, _warning_message(code, rel, name=ref.raw_name), source_file_id=sf_id)
+
+    # 2. pairing against ALL stored rows of the file
+    old_rows = {r.id: r for r in repo.list_item_sources(source_file_id=sf_id)}
+    result = pair_sources(
+        [
+            OldSource(r.id, r.block_hash, r.occurrence_index, r.description or "", r.section_heading, r.line_start, r.present)
+            for r in old_rows.values()
+        ],
+        [
+            NewEntry(i, it.block_hash, it.occurrence_index, it.description, it.section_heading, it.line_start)
+            for i, it in enumerate(parsed.items)
+        ],
+    )
+    verbatim = {p.new_index for p in result.pairs if p.rule == "hash"}
+    needs_owners = [i for i in range(len(parsed.items)) if i not in verbatim or names_changed]
+    resolved = {i: resolve_item_owners(parsed.items[i], mctx, registry, env.cfg) for i in needs_owners}
+    repo.persist_registry(registry)  # people rows before the rows that reference them
+    for i in needs_owners:
+        owners, owner_warnings = resolved[i]
+        _emit_item_warnings(env, sf_id, rel, parsed.items[i], owners, owner_warnings)
+
+    # 3. paired rows
+    changes: dict[int, _ItemChange] = {}
+    for pair in result.pairs:
+        row, it = old_rows[pair.old_id], parsed.items[pair.new_index]
+        ch = changes.setdefault(row.item_id, _ItemChange())
+        _update_paired_source(
+            env, row, it, resolved.get(pair.new_index), stored_meeting.meeting_date, meeting.date, rel, ch
+        )
+    env.db.fault("reingest_paired")
+    env.db.fault(f"reingest_paired:{rel}")
+
+    # 5. removed lines (never deleted): present=0 + source_removed
+    for old_id in result.old_only:
+        row = old_rows[old_id]
+        if not row.present:
+            continue
+        repo.update_item_source(row.id, present=False)
+        changes.setdefault(row.item_id, _ItemChange()).removed.append(row.id)
+        repo.record_event(
+            row.item_id, "source_removed", None, {"source": f"{rel}:{row.line_start}", "source_id": row.id}, env.run_id
+        )
+    env.db.fault("reingest_removed")
+    env.db.fault(f"reingest_removed:{rel}")
+
+    # item level: canonical fields, status effects, source state
+    updated: set[int] = set()
+    unchanged: set[int] = set()
+    for item_id in sorted(changes):
+        ch = changes[item_id]
+        if ch.content or ch.revived or ch.removed:
+            updated.add(item_id)
+            canonical = recompute_canonical(repo, item_id, env.run_id, ch.fresh)
+            if ch.content and not canonical:
+                src_id = ch.event_source or ch.sources[0]
+                src_row = repo.get_item_source(src_id)
+                assert src_row is not None
+                repo.record_event(
+                    item_id,
+                    "updated_from_source",
+                    {k: _json_value(old) for k, (old, _new) in ch.content.items()},
+                    {
+                        "source": f"{rel}:{src_row.line_start}",
+                        "source_id": src_id,
+                        **{k: _json_value(new) for k, (_old, new) in ch.content.items()},
+                    },
+                    env.run_id,
+                )
+        else:
+            unchanged.add(item_id)
+        for change in ch.status_changes:
+            effects = apply_status_effects(env, item_id, change)
+            if effects.reopened or effects.completed:
+                updated.add(item_id)
+                unchanged.discard(item_id)
+    updated.update(recompute_source_state(repo, [i for i, c in changes.items() if c.revived or c.removed]))
+    unchanged -= updated
+
+    # 6. new entries: the normal matcher path, document order
+    fctx = FileCtx(sf_id, meeting_id, rel, env.folder_root, meeting.date, env.run_id, mctx.attendee_ids)
+    matcher = env.match or match_or_create
+    totals = {"new": 0, "merged": 0, "dups": 0, "done": 0}
+    for i in result.new_only:
+        item = parsed.items[i]
+        res = matcher(env, _new_source(fctx, item, resolved[i][0]))
+        totals["new" if res.outcome == "new" else "merged"] += 1
+        totals["dups"] += res.possible_duplicates
+        totals["done"] += item.checkbox_state == "done"
+    env.db.fault("reingest_new")
+    env.db.fault(f"reingest_new:{rel}")
+
+    # 7. last statement: the hash that makes the file "unchanged" next run
+    repo.update_source_file(
+        sf_id,
+        content_sha256=parsed.content_sha256,
+        size_bytes=parsed.size_bytes,
+        mtime=_iso_mtime(parsed.mtime_ns),
+        status="ok",
+        failure_code=None,
+        last_run_id=env.run_id,
+        last_ingested_run=env.run_id,
+    )
+    return FileWrite(
+        sf_id,
+        items_new=totals["new"],
+        items_merged=totals["merged"],
+        items_updated=len(updated),
+        items_unchanged=len(unchanged),
+        possible_duplicates=totals["dups"],
+        already_done_in_note=totals["done"],
+    )
+
+
+# --------------------------------------------------------------------------- source_state (T-M5-13, 10.7.4)
+
+
+def recompute_source_state(repo: Repo, item_ids: Iterable[int] | None = None) -> list[int]:
+    """``source_state`` of the given items (all items when None): ``missing`` iff the item has sources and
+    none is ``present`` (flag ``SM``), else ``present``. Status is never touched; items are never deleted
+    (BR-16). Writes only through ``touch_item`` (``updated_at`` moves only on a real change), so it is
+    idempotent. Returns the ids whose state changed (ascending)."""
+    out: list[int] = []
+    for item_id, has_present in sorted(repo.source_presence(item_ids).items()):
+        if repo.touch_item(item_id, {"source_state": "present" if has_present else "missing"}):
+            out.append(item_id)
+    return out
+
+
+# --------------------------------------------------------------------------- missing files (T-M5-13, 10.7.5)
+#
+# ``mark_missing_files(env, plan.missing)``: for every stored row of THIS folder_root that the scan did not find
+# and that is inside the scan scope (``plan_files`` already applied the scope rule: under ``--no-recursive``
+# only top-level rows) -- one transaction per file: ``source_file.status='missing'`` (hash kept), its present
+# sources become ``present=0`` (event ``source_removed`` with ``reason: file_missing``), run warning
+# ``W-FILE-MISSING`` and ``recompute_source_state`` for the affected items. Items are never deleted nor closed.
+# A row that never held data and only ``failed`` is marked quietly (no warning). A missing file that comes
+# back (same or changed content) is class ``changed`` and is reconciled by ``reingest_file``: identical lines
+# re-pair with their rows (revived, no new items). Fault points ``missing_start[:<rel>]``,
+# ``missing_written[:<rel>]``.
+
+
+@dataclass(frozen=True, slots=True)
+class MissingOutcome:
+    """Result of marking one stored file missing. ``failure_code`` is set when the file's transaction failed
+    (rolled back, the row is left as it was and retried by the next run)."""
+
+    rel_path: str
+    source_file_id: int
+    sources_marked: int = 0
+    items_missing: tuple[int, ...] = ()
+    warned: bool = True
+    failure_code: str | None = None
+    traceback: str | None = None
+
+
+def _mark_file_missing(env: IngestEnv, row: SourceFileRow) -> MissingOutcome:
+    repo, rel = env.repo, row.rel_path
+    had_data = _has_data(repo, row)
+    marked = repo.list_item_sources(source_file_id=row.id, present=True)
+    for s in marked:
+        repo.update_item_source(s.id, present=False)
+        repo.record_event(
+            s.item_id,
+            "source_removed",
+            None,
+            {"source": f"{rel}:{s.line_start}", "source_id": s.id, "reason": "file_missing"},
+            env.run_id,
+        )
+    repo.update_source_file(row.id, status="missing", failure_code=None, last_run_id=env.run_id)
+    warn = had_data or row.status in ("ok", "empty")
+    if warn:
+        repo.add_warning(
+            env.run_id,
+            codes.W_FILE_MISSING,
+            codes.REGISTRY[codes.W_FILE_MISSING].format(path=rel),
+            source_file_id=row.id,
+        )
+    became = recompute_source_state(repo, {s.item_id for s in marked})
+    return MissingOutcome(rel, row.id, len(marked), tuple(became), warn)
+
+
+def mark_missing_files(env: IngestEnv, rows: Iterable[SourceFileRow]) -> list[MissingOutcome]:
+    """Mark each stored file missing in its own transaction (section comment). ``rows`` = ``FilePlan.missing``;
+    call after ``process_plan``. One file's failure never stops the run (``EnvError`` / ``BaseException`` excepted)."""
+    out: list[MissingOutcome] = []
+    for row in rows:
+        rel = row.rel_path
+        try:
+            with file_transaction(env.db, env.registry):
+                env.db.fault("missing_start")
+                env.db.fault(f"missing_start:{rel}")
+                outcome = _mark_file_missing(env, row)
+                env.db.fault("missing_written")
+                env.db.fault(f"missing_written:{rel}")
+        except EnvError:
+            raise
+        except Exception as exc:
+            code = codes.E_INTERNAL_PARSE
+            trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+            with env.db.transaction():
+                env.repo.add_warning(env.run_id, code, parse_message(code, rel), source_file_id=row.id)
+            outcome = MissingOutcome(rel, row.id, warned=False, failure_code=code, traceback=trace)
+        out.append(outcome)
+    return out
+
+
+# =============================================================================================
 # SECTION 6 (interim) -- driver ``run_ingest``; T-M5-13/14/17 own the final orchestration
 # =============================================================================================
 #
@@ -1289,6 +1698,8 @@ class IngestResult:
     outcomes: tuple[FileOutcome, ...]
     plan: FilePlan
     discovery_warnings: tuple[ParseWarning, ...]
+    #: stored files of this folder not found by the scan (T-M5-13); empty when none
+    missing: tuple[MissingOutcome, ...] = ()
 
     @property
     def exit_code(self) -> int:
@@ -1331,9 +1742,10 @@ def run_ingest(
         plan = plan_files(parsed, repo.list_source_files(root), folder_root=root, recursive=recursive)
         env = IngestEnv(db, repo, registry, run_id, root, run_ctx.today, cfg, match, reingest)
         outcomes = process_plan(env, plan)
+        missing = mark_missing_files(env, plan.missing)
         counters = RunCounters()
         for outcome in outcomes:
             counters.record(outcome)
         assert counters.invariant_holds(), "discovered = ingested + unchanged + empty + failed"
         row = finish_run(db, repo, run_id, counters)
-        return IngestResult(session.run, row, counters, tuple(outcomes), plan, discovery.warnings)
+        return IngestResult(session.run, row, counters, tuple(outcomes), plan, discovery.warnings, tuple(missing))

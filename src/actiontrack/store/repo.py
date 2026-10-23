@@ -604,6 +604,19 @@ class Repo:
             n += 1
         return n
 
+    def replace_attendees(self, meeting_id: int, attendees: Iterable[tuple[str, str | None, str | None]]) -> bool:
+        """Make the meeting's ``meeting_attendee`` rows equal ``attendees`` (a changed note, T-M5-12). True when
+        something changed; an equal list writes nothing."""
+        new = {
+            to_storage_text(raw): (person_id, email_hint) for raw, person_id, email_hint in attendees
+        }
+        old = {r["raw_name"]: (r["person_id"], r["email_hint"]) for r in self.list_attendees(meeting_id)}
+        if new == old:
+            return False
+        self.conn.execute("DELETE FROM meeting_attendee WHERE meeting_id = ?", (meeting_id,))
+        self.insert_attendees(meeting_id, attendees)
+        return True
+
     def list_attendees(self, meeting_id: int) -> list[sqlite3.Row]:
         return self.conn.execute(
             "SELECT raw_name, person_id, email_hint FROM meeting_attendee WHERE meeting_id = ? ORDER BY raw_name",
@@ -1026,6 +1039,21 @@ class Repo:
             params.append(int(present))
         sql = "SELECT * FROM item_source" + (" WHERE " + " AND ".join(where) if where else "")
         return [self._source_row(r) for r in self.conn.execute(sql + " ORDER BY id", params).fetchall()]
+
+    def source_presence(self, item_ids: Iterable[int] | None = None) -> dict[int, bool]:
+        """``{item_id: has a present source}`` for items that have at least one source (all items when
+        ``item_ids`` is None). Input of the ``source_state`` derivation (10.7.4)."""
+        if item_ids is None:
+            rows = self.conn.execute("SELECT item_id, MAX(present) FROM item_source GROUP BY item_id").fetchall()
+        else:
+            ids = sorted(set(item_ids))
+            if not ids:
+                return {}
+            marks = ",".join("?" * len(ids))
+            rows = self.conn.execute(
+                f"SELECT item_id, MAX(present) FROM item_source WHERE item_id IN ({marks}) GROUP BY item_id", ids
+            ).fetchall()
+        return {r[0]: bool(r[1]) for r in rows}
 
     def list_source_context(self, item_id: int) -> list[SourceContextRow]:
         """All sources of an item (present or not, in id order) with meeting date and file path."""
