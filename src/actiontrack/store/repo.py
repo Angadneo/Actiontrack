@@ -72,6 +72,9 @@ no method commits and none deletes an ``item_source`` or ``item_link`` row, BR-0
                ``(item_id, kind, run_id, payload)``), ``list_events(item_id=None, run_id=None)``
     warnings:  ``add_warning(run_id, code, message, *, source_file_id=None, line=None) -> int``,
                ``list_warnings(run_id=None, source_file_id=None)``
+    whole-database passes (T-M4-15 / T-M5-14): ``list_all_item_owners()``, ``list_all_attendees()``,
+               ``set_attendee_person(meeting_id, raw_name, person_id)``, ``meeting_source_file_id(meeting_id)``,
+               ``count_owner_rows(provenance)`` (state count), ``bump_updated_at(item_id)``
 ``canonical_json(obj) -> str``  sorted keys, compact, non-ASCII kept (used for event payloads).
 Re-exported from ``actiontrack.domain.models``: ``format_item_id``, ``parse_item_id``.
 """
@@ -954,6 +957,43 @@ class Repo:
                 },
             )
         return True
+
+    # ----------------------------------------------- whole-database owner passes (T-M4-15 / T-M5-14)
+    def list_all_item_owners(self) -> list[ItemOwnerRow]:
+        """Every canonical ``item_owner`` row of the database, ordered by (item, ordinal)."""
+        rows = self.conn.execute("SELECT * FROM item_owner ORDER BY item_id, ordinal").fetchall()
+        return [_load(ItemOwnerRow, r, candidates=lambda v: tuple(json.loads(v))) for r in rows]
+
+    def list_all_attendees(self) -> list[sqlite3.Row]:
+        """Every ``meeting_attendee`` row (``meeting_id, raw_name, person_id, email_hint``), ordered."""
+        return self.conn.execute(
+            "SELECT meeting_id, raw_name, person_id, email_hint FROM meeting_attendee "
+            "ORDER BY meeting_id, raw_name"
+        ).fetchall()
+
+    def set_attendee_person(self, meeting_id: int, raw_name: str, person_id: str | None) -> bool:
+        """Point one attendee row at ``person_id`` (re-resolution, 10.3 step 6). True when it changed."""
+        cur = self.conn.execute(
+            "UPDATE meeting_attendee SET person_id = ? WHERE meeting_id = ? AND raw_name = ? "
+            "AND person_id IS NOT ?",
+            (person_id, meeting_id, to_storage_text(raw_name), person_id),
+        )
+        return cur.rowcount > 0
+
+    def meeting_source_file_id(self, meeting_id: int) -> int | None:
+        row = self.conn.execute("SELECT source_file_id FROM meeting WHERE id = ?", (meeting_id,)).fetchone()
+        return None if row is None else int(row[0])
+
+    def count_owner_rows(self, provenance: str) -> int:
+        """Number of canonical ``item_owner`` rows with the given provenance (a state count, 4.2)."""
+        return int(
+            self.conn.execute("SELECT COUNT(*) FROM item_owner WHERE provenance = ?", (provenance,)).fetchone()[0]
+        )
+
+    def bump_updated_at(self, item_id: int) -> None:
+        """``updated_at`` := now. Only for a change that ``touch_item`` cannot see (owner links repointed by a
+        person merge); callers use it strictly on a real owner change (BR-15)."""
+        self.update_row("action_item", "id", item_id, {"updated_at": self.now_iso()})
 
     # ----------------------------------------------------------- item_source
     def insert_item_source(

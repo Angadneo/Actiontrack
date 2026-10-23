@@ -11,7 +11,7 @@ Sections
 3. Per-file transaction engine / report counters (T-M5-05)     -- implemented
 4. Persisting a new file (T-M5-07)                             -- implemented
 5. Matching integration (T-M5-08..11/22) -- implemented; 5b. changed files, missing files, source_state (T-M5-12/13) -- implemented
-6. Whole-database passes and finalisation (T-M5-14); interim driver ``run_ingest`` -- later / interim
+6. 6a. Whole-database owner re-resolution persisted (T-M4-15); 6b. finalisation (T-M5-14), dry run (T-M5-17), driver ``run_ingest`` -- implemented
 
 Section 1 public API (T-M5-03; spec FR-01.1, AC-01.1, 10.7.1, 10.7.5, BR-18, NFR-DET-01)
 --------------------------------------------------------------------------------------
@@ -106,9 +106,22 @@ sources absent; call with None for the whole DB), ``mark_missing_files(env, rows
 ``FilePlan.missing``; ``run_ingest`` calls it after ``process_plan`` and returns it as ``IngestResult.missing``).
 Fault points: ``reingest_paired|removed|new[:rel]``, ``missing_start|written[:rel]``.
 
-Section 6 (interim) ``run_ingest(db_path, folder, *, cfg, run_ctx, recursive=True, dry_run=False,
-fault_hook=None, match=None, reingest=None) -> IngestResult``  discover -> session -> registry -> parse all ->
-plan -> ``process_plan`` -> finish. ``IngestResult.exit_code`` is 5 when a file failed, else 0.
+Section 6a public API (T-M4-15; spec 10.3 step 6, 10.7.9, H-05): ``reresolve_database(repo, cfg, run_id) ->
+ReResolutionApplied`` (= ``load_owner_snapshot(repo)`` -> pure ``re_resolve`` -> ``apply_reresolution(repo, result,
+run_id)``; caller owns the transaction). ``ReResolutionApplied(merges, attendee_changes, changes, created_people,
+warnings)``: ``changes`` are canonical item-level ``OwnerChange`` rows (``merged_or_completed_under_earlier_resolution``
+set on an H-05 downgrade), ``warnings`` = ``(code, item_id | None, message)`` as written; ``.downgrades``,
+``.is_empty``. ``merged_or_completed(repo, item_id)``, ``H05_NOTE``. See the section comment for the meeting-context
+decision (per source) and the apply order.
+
+Section 6b public API (T-M5-14 / T-M5-17): ``finalise_run(env, counters) -> (Finalisation, IngestRunRow)`` (one
+transaction: re-resolution, ``recompute_source_state``, ``emit_status_conflicts``, state counter
+``resolved_via_attendance``, ``finalize_run``; failure rolls back only itself and closes the run ``partial`` with an
+``E-INTERNAL-PARSE`` run warning), ``run_ingest(db_path, folder, *, cfg, run_ctx, recursive=True, dry_run=False,
+fault_hook=None, match=None, reingest=None) -> IngestResult`` (discover -> session -> registry -> parse all -> plan ->
+``process_plan`` -> ``mark_missing_files`` -> ``finalise_run``). ``IngestResult`` adds ``finalisation``,
+``.reresolution``, ``.conflicts``, ``.finalisation_error``, ``.dry_run``; ``exit_code`` is 5 when a file failed else 0.
+``--dry-run`` runs the identical pipeline on an in-memory copy (no file, run row, lock or side file is written).
 """
 
 from __future__ import annotations
@@ -153,6 +166,8 @@ from actiontrack.domain.models import (
     ParsedFile,
     ParsedItem,
     ParseWarning,
+    Person,
+    Provenance,
     ResolvedOwner,
     format_item_id,
     ingest_order_key,
@@ -162,8 +177,24 @@ from actiontrack.errors import EnvError, ExitCode
 from actiontrack.parsing import parse_file
 from actiontrack.parsing.discovery import discover
 from actiontrack.parsing.owner_phrase import OwnerAnalyzer
-from actiontrack.resolution.owners import MeetingContext, resolve_attendees, resolve_owner
-from actiontrack.resolution.people import PeopleRegistry, file_transaction, known_name_predicate
+from actiontrack.resolution.owners import (
+    KIND_CHANGED,
+    KIND_DOWNGRADED,
+    KIND_MERGE_PROVISIONAL,
+    KIND_RESOLVED,
+    AttendeeChange,
+    MeetingContext,
+    OwnerChange,
+    ReResolutionResult,
+    ReResolutionSnapshot,
+    StoredAttendee,
+    StoredMeeting,
+    StoredOwner,
+    re_resolve,
+    resolve_attendees,
+    resolve_owner,
+)
+from actiontrack.resolution.people import MergeRecord, PeopleRegistry, file_transaction, known_name_predicate
 from actiontrack.store.db import Database
 from actiontrack.store.repo import IngestRunRow, ItemSourceRow, Repo, SourceFileRow, to_storage_text
 
@@ -904,6 +935,8 @@ def recompute_canonical(
     item_id: int,
     run_id: int | None,
     fresh_owners: Mapping[int, Sequence[ResolvedOwner]] | None = None,
+    *,
+    owner_event: bool = True,
 ) -> dict[str, tuple[object, object]]:
     """Re-derive an item's canonical description / task text / core key / due / owners from its sources
     (``domain.canonical.select_canonical``) and write them through ``touch_item`` (T-M5-22).
@@ -912,7 +945,9 @@ def recompute_canonical(
     ``owner_changed`` (owners, before/after). ``status`` is never written here (module docstring of
     ``canonical``). Owner ``candidates`` (not stored per source) are carried over from the current item rows
     when the phrase is unchanged, or taken from ``fresh_owners`` (``{source_id: resolved owners}`` of a source
-    that was just re-resolved). Returns what changed (idempotent: a second call returns ``{}``)."""
+    that was just re-resolved). ``owner_event=False`` writes the owner rows without the ``owner_changed`` event
+    (the whole-database re-resolution records its own event with the full before / after, T-M4-15). Returns what
+    changed (idempotent: a second call returns ``{}``)."""
     views = load_source_views(repo, item_id)
     if not views:
         return {}
@@ -938,7 +973,11 @@ def recompute_canonical(
     changed = dict(repo.touch_item(item_id, sel.item_columns(), event_kind="updated_from_source", run_id=run_id))
     changed.update(
         repo.touch_item(
-            item_id, None, owners=tuple(carry(o) for o in sel.owners), event_kind="owner_changed", run_id=run_id
+            item_id,
+            None,
+            owners=tuple(carry(o) for o in sel.owners),
+            event_kind="owner_changed" if owner_event else None,
+            run_id=run_id,
         )
     )
     return changed
@@ -1680,14 +1719,328 @@ def mark_missing_files(env: IngestEnv, rows: Iterable[SourceFileRow]) -> list[Mi
 
 
 # =============================================================================================
-# SECTION 6 (interim) -- driver ``run_ingest``; T-M5-13/14/17 own the final orchestration
+# SECTION 6a -- Whole-database owner re-resolution, persisted (T-M4-15; spec 10.3 step 6, 10.7.9, H-05, G-08)
 # =============================================================================================
 #
-# Implemented here so the engine can be exercised end to end: discover -> (session: lock, run row) ->
-# registry from the database + roster -> parse every file -> plan -> ``process_plan`` -> counters -> finish.
-# NOT yet done (later tasks): ``plan.missing`` handling (T-M5-13), the whole-database passes of 10.7.9
-# (T-M5-14), dry-run reporting (T-M5-17), the report text (T-M5-15). Discovery warnings are stored as
-# run-level ``ingest_warning`` rows (``source_file_id`` NULL).
+# ``reresolve_database(repo, cfg, run_id)`` = ``load_owner_snapshot`` -> ``re_resolve`` (pure, T-M4-11) ->
+# ``apply_reresolution``. It runs inside ONE transaction owned by the caller (the finalisation, T-M5-14, or a test).
+#
+# Meeting context for merged items (decision): the pure pass keys owners by (id, ordinal) and takes ONE meeting
+# per owner. The snapshot is therefore built from the PER-SOURCE owner rows (``item_source_owner``), with the
+# synthetic ``StoredOwner.item_id`` = the ``item_source.id`` and the meeting of THAT source: every phrase is
+# re-resolved exactly as it was at ingest time, in the attendee context of the note it was written in (an item
+# merged from a note with an attendee list and one without keeps both verdicts per source). The canonical
+# ``item_owner`` rows are then rebuilt by ``recompute_canonical`` from the latest present source (the owner
+# driver, ``domain.canonical``), so the item shows the verdict of its canonical source. ``item_source_owner``
+# stores no candidates: for an ambiguous source row they are taken from the item's canonical row with the same
+# (phrase, role) when there is one, else empty; a change that differs only in such candidates is no row change.
+#
+# Apply order (``apply_reresolution``): registry persisted (created people, roster changes, aliases) -> provisional
+# merges (``Repo.merge_person``: ItemOwner, ItemSourceOwner, MeetingAttendee and draft rows repointed, alias kept,
+# provisional person deleted) -> attendee refresh -> per-source owner rows -> ``recompute_canonical(owner_event=False)`` for
+# every affected item -> ONE ``owner_changed`` event per item whose canonical owners really changed (before / after
+# = ``{"owners": [[raw, role, person, status, candidates, provenance], ...]}``; the H-05 note is added to ``after``
+# as ``"note"``) and the warnings ``W-OWNER-NOW-AMBIGUOUS`` (once per item per run, file:line of the item's first
+# source) / ``W-NAME-DIACRITIC``. Nothing else is written: ``item_source`` rows, links, status and completion are
+# never touched (H-05: merges and completions are never undone; only the owner link changes). Idempotent: a second
+# pass over the result finds nothing. ``updated_at`` moves only for items whose owners really changed.
+
+H05_NOTE = "merged/completed under an earlier owner resolution"
+
+
+@dataclass(frozen=True, slots=True)
+class ReResolutionApplied:
+    """What ``apply_reresolution`` persisted. ``changes`` are CANONICAL item-level rows (one ``OwnerChange`` per
+    changed ``item_owner`` row, ``merged_or_completed_under_earlier_resolution`` set for H-05 downgrades);
+    ``warnings`` are ``(code, item_id | None, message)`` as written to ``ingest_warning``."""
+
+    merges: tuple[MergeRecord, ...] = ()
+    attendee_changes: tuple[AttendeeChange, ...] = ()
+    changes: tuple[OwnerChange, ...] = ()
+    created_people: tuple[Person, ...] = ()
+    warnings: tuple[tuple[str, int | None, str], ...] = ()
+
+    @property
+    def is_empty(self) -> bool:
+        return not (self.merges or self.attendee_changes or self.changes or self.created_people)
+
+    @property
+    def downgrades(self) -> tuple[OwnerChange, ...]:
+        return tuple(c for c in self.changes if codes.W_OWNER_NOW_AMBIGUOUS in c.warnings)
+
+
+def load_owner_snapshot(repo: Repo) -> ReResolutionSnapshot:
+    """Whole-database snapshot for the pure pass (see the section comment; all folder roots, explicit order)."""
+    attendees: dict[int, list[StoredAttendee]] = {}
+    for row in repo.list_all_attendees():
+        attendees.setdefault(row["meeting_id"], []).append(
+            StoredAttendee(row["raw_name"], row["person_id"], row["email_hint"])
+        )
+    meetings = tuple(StoredMeeting(mid, tuple(rows)) for mid, rows in sorted(attendees.items()))
+    canonical: dict[tuple[int, str | None, str], tuple[str, ...]] = {}
+    for o in repo.list_all_item_owners():
+        if o.owner_status == "ambiguous":
+            canonical[(o.item_id, o.owner_raw, o.role)] = tuple(o.candidates)
+    sources = {s.id: s for s in repo.list_item_sources()}
+    owners: list[StoredOwner] = []
+    for row in repo.list_all_source_owners():
+        src = sources[row.item_source_id]
+        owners.append(
+            StoredOwner(
+                item_id=row.item_source_id,
+                ordinal=row.ordinal,
+                meeting_id=src.meeting_id,
+                owner_raw=row.owner_raw,
+                status=OwnerStatus(row.owner_status),
+                person_id=row.person_id,
+                candidates=canonical.get((src.item_id, row.owner_raw, row.role), ()),
+                provenance=Provenance(row.provenance),
+                role=OwnerRole(row.role),
+            )
+        )
+    return ReResolutionSnapshot(meetings, tuple(owners))
+
+
+def _owner_rows(repo: Repo) -> dict[int, list[tuple[object, ...]]]:
+    out: dict[int, list[tuple[object, ...]]] = {}
+    for r in repo.list_all_item_owners():
+        out.setdefault(r.item_id, []).append(
+            (r.owner_raw, r.role, r.person_id, r.owner_status, tuple(sorted(r.candidates)), r.provenance)
+        )
+    return out
+
+
+def merged_or_completed(repo: Repo, item_id: int) -> bool:
+    """H-05 flag: the item was merged (Tier-1 ``merged`` event) or takes part in a Tier-1b completion
+    (``completed_by`` link at either end), so its sources / status stem from an earlier owner resolution."""
+    if any(e.kind == "merged" for e in repo.list_events(item_id)):
+        return True
+    return any(link.kind == "completed_by" for link in repo.links_of(item_id))
+
+
+def _item_warning(
+    repo: Repo, run_id: int, item_id: int, code: str, suffix: str = "", **kw: object
+) -> tuple[str, int | None, str] | None:
+    """One run warning anchored at the item's first source; deduped per (run, message, file)."""
+    sources = repo.list_item_sources(item_id)
+    if sources:
+        first = sources[0]
+        sf = repo.get_source_file_by_id(first.source_file_id)
+        sf_id, rel, line = first.source_file_id, (sf.rel_path if sf else "?"), first.line_start
+    else:
+        sf_id, rel, line = None, format_item_id(item_id), None
+    message = _warning_message(code, rel, line, **kw) + suffix
+    if any(w.code == code and w.message == message and w.source_file_id == sf_id for w in repo.list_warnings(run_id)):
+        return None
+    repo.add_warning(run_id, code, message, source_file_id=sf_id, line=line)
+    return (code, item_id, message)
+
+
+def _kind(old: tuple[object, ...], new: tuple[object, ...], merged_ids: set[str]) -> str:
+    if old[2] in merged_ids:
+        return KIND_MERGE_PROVISIONAL
+    if (old[3], new[3]) == ("resolved", "ambiguous"):
+        return KIND_DOWNGRADED
+    if (old[3], new[3]) == ("ambiguous", "resolved"):
+        return KIND_RESOLVED
+    return KIND_CHANGED
+
+
+def apply_reresolution(repo: Repo, result: ReResolutionResult, run_id: int) -> ReResolutionApplied:
+    """Persist a ``ReResolutionResult`` computed by ``re_resolve(load_owner_snapshot(repo), ...)`` (section
+    comment). The caller owns the transaction."""
+    before = _owner_rows(repo)
+    repo.persist_registry(result.registry)  # first: created people and a new roster person must exist as rows
+    for m in result.merges:
+        repo.merge_person(m.provisional_id, m.into_person_id, alias=m.alias, alias_key=m.alias_key)
+    warnings: list[tuple[str, int | None, str]] = []
+    for ac in result.attendee_changes:
+        if repo.set_attendee_person(int(ac.meeting_id), ac.raw_name, ac.new_person_id):
+            sf_id = repo.meeting_source_file_id(int(ac.meeting_id))
+            sf = None if sf_id is None else repo.get_source_file_by_id(sf_id)
+            for code in ac.warnings:
+                msg = _warning_message(code, sf.rel_path if sf else "?", name=ac.raw_name)
+                repo.add_warning(run_id, code, msg, source_file_id=sf_id)
+                warnings.append((code, None, msg))
+    # per-source owner rows (the synthetic item_id of a pure-pass change is the source id)
+    sources = {s.id: s for s in repo.list_item_sources()}
+    by_source: dict[int, dict[int, OwnerChange]] = {}
+    for c in result.changes:
+        by_source.setdefault(c.item_id, {})[c.ordinal] = c
+    fresh: dict[int, list[ResolvedOwner]] = {}
+    affected: set[int] = set()
+    for source_id in sorted(by_source):
+        new_rows: list[ResolvedOwner] = []
+        for row in repo.list_source_owners(source_id):
+            c = by_source[source_id].get(row.ordinal)
+            if c is None:
+                new_rows.append(
+                    ResolvedOwner(
+                        row.ordinal,
+                        row.owner_raw,
+                        row.person_id,
+                        OwnerStatus(row.owner_status),
+                        (),
+                        Provenance(row.provenance),
+                        OwnerRole(row.role),
+                    )
+                )
+                continue
+            owner = ResolvedOwner(
+                row.ordinal,
+                row.owner_raw,
+                c.new_person_id,
+                c.new_status,
+                c.new_candidates,
+                c.new_provenance,
+                OwnerRole(row.role),
+            )
+            new_rows.append(owner)
+            fresh.setdefault(source_id, []).append(owner)  # only re-resolved rows carry fresh candidates
+        repo.set_source_owners(source_id, new_rows)
+        affected.add(sources[source_id].item_id)
+    after_merge = _owner_rows(repo)
+    affected |= {i for i in set(before) | set(after_merge) if before.get(i) != after_merge.get(i)}
+    for item_id in sorted(affected):
+        mine = {sid: owners for sid, owners in fresh.items() if sources[sid].item_id == item_id}
+        recompute_canonical(repo, item_id, run_id, mine, owner_event=False)
+    after = _owner_rows(repo)
+    merged_ids = {m.provisional_id for m in result.merges}
+    changes: list[OwnerChange] = []
+    for item_id in sorted(affected):
+        old, new = before.get(item_id, []), after.get(item_id, [])
+        if old == new:
+            continue
+        flag = merged_or_completed(repo, item_id)
+        repo.bump_updated_at(item_id)
+        downgraded: list[str] = []
+        for ordinal, n in enumerate(new):
+            o = old[ordinal] if ordinal < len(old) else (n[0], n[1], None, "unassigned", (), "none")
+            if o == n:
+                continue
+            kind = _kind(o, n, merged_ids)
+            is_down = kind == KIND_DOWNGRADED
+            if is_down:
+                downgraded.append(str(n[0]))
+            changes.append(
+                OwnerChange(
+                    item_id=item_id,
+                    ordinal=ordinal,
+                    owner_raw=n[0],  # type: ignore[arg-type]
+                    role=OwnerRole(n[1]),
+                    kind=kind,
+                    old_status=OwnerStatus(o[3]),
+                    old_person_id=o[2],  # type: ignore[arg-type]
+                    old_candidates=tuple(o[4]),  # type: ignore[arg-type]
+                    old_provenance=Provenance(o[5]),
+                    new_status=OwnerStatus(n[3]),
+                    new_person_id=n[2],  # type: ignore[arg-type]
+                    new_candidates=tuple(n[4]),  # type: ignore[arg-type]
+                    new_provenance=Provenance(n[5]),
+                    warnings=(codes.W_OWNER_NOW_AMBIGUOUS,) if is_down else (),
+                    merged_or_completed_under_earlier_resolution=flag and is_down,
+                )
+            )
+            if n[5] == Provenance.DIACRITIC_FOLD.value and o[5] != n[5] and n[2] is not None:
+                w = _item_warning(
+                    repo, run_id, item_id, codes.W_NAME_DIACRITIC,
+                    name=n[0], other=result.registry.full_name(str(n[2])),
+                )
+                if w:
+                    warnings.append(w)
+        payload: dict[str, object] = {"owners": new}
+        if flag and downgraded:
+            payload["note"] = H05_NOTE
+        repo.record_event(item_id, "owner_changed", {"owners": old}, payload, run_id)
+        if downgraded:
+            w = _item_warning(
+                repo, run_id, item_id, codes.W_OWNER_NOW_AMBIGUOUS,
+                f" ({H05_NOTE})" if flag else "", name=", ".join(downgraded),
+            )
+            if w:
+                warnings.append(w)
+    return ReResolutionApplied(
+        result.merges, result.attendee_changes, tuple(changes), result.created_people, tuple(warnings)
+    )
+
+
+def reresolve_database(repo: Repo, cfg: Config, run_id: int) -> ReResolutionApplied:
+    """Snapshot -> pure ``re_resolve`` with the CURRENT roster and config -> ``apply_reresolution`` (one call)."""
+    registry = repo.load_registry(cfg.roster)
+    result = re_resolve(load_owner_snapshot(repo), registry, cfg)
+    return apply_reresolution(repo, result, run_id)
+
+
+# =============================================================================================
+# SECTION 6b -- Finalisation (T-M5-14), dry run (T-M5-17) and the driver ``run_ingest``
+# =============================================================================================
+#
+# ``run_ingest``: discover -> session (lock + run row; dry run: in-memory copy, no lock, no file) -> registry from
+# the database + roster -> parse every file -> plan -> ``process_plan`` (one transaction per file) ->
+# ``mark_missing_files`` -> ``finalise_run`` (ONE transaction) -> ``IngestResult``.
+#
+# ``finalise_run(env, counters)`` runs, in this order, inside a single transaction, on EVERY ingest (also when
+# every file was ``unchanged``, 10.7.9 / G-08):
+#   1. whole-database owner re-resolution (``reresolve_database``: current roster, aliases, known people and
+#      ``attendee_disambiguation``), persisted with ``owner_changed`` events and ``W-OWNER-NOW-AMBIGUOUS`` /
+#      ``W-NAME-DIACRITIC`` warnings;
+#   2. ``recompute_source_state`` for the whole database (``missing`` iff no present source);
+#   3. ``emit_status_conflicts`` (``W-STATUS-CONFLICT``, whole database);
+#   4. ``counters.resolved_via_attendance`` := STATE count of canonical owner rows with provenance
+#      ``attendee_in_meeting`` over the whole database (all folder roots, open and done items; namesake groups
+#      only because only step 3a writes that provenance, AC-05.18) -- not a run delta;
+#   5. ``finalize_run``: counters, status ``complete`` / ``partial`` (>= 1 failed file), ``finished_at``.
+# Display names are not recomputed here: the registry derives them from stored spellings on demand (no step).
+#
+# An exception inside this transaction rolls back ONLY the finalisation (files already committed stay). The run is
+# then closed in a small second transaction as ``partial`` with the file counters and a run warning
+# ``E-INTERNAL-PARSE`` ("finalisation failed ..."), and ``IngestResult.finalisation_error`` carries the message
+# (T-M5-18 decides the exit code; the block says exit 4). ``EnvError`` and ``BaseException`` (a kill) propagate and
+# leave the run ``in_progress`` for the next run to settle. Fault points: ``finalise_start`` (before step 1),
+# ``finalise_written`` (after step 4).
+#
+# Dry run (``dry_run=True``): ``ingest_session`` opens ``Database.open_dry_run`` (a read-only ``sqlite3.backup``
+# of the real file into ``:memory:``; an absent file starts from an empty in-memory schema): the SAME pipeline
+# runs against the copy, including both whole-database passes. Nothing reaches the disk: no database, no run row,
+# no ``<db>.lock``, no ``-wal`` / ``-shm`` side file, no stale-run marking. The run id is the copy's "next id".
+# ``IngestResult.reresolution`` / ``.conflicts`` list what the passes WOULD change.
+
+
+@dataclass(frozen=True, slots=True)
+class Finalisation:
+    """What the finalisation transaction did (also what a dry run would do)."""
+
+    reresolution: ReResolutionApplied = ReResolutionApplied()
+    source_state_changed: tuple[int, ...] = ()
+    conflicts: tuple[int, ...] = ()
+    error: str | None = None
+
+
+def finalise_run(env: IngestEnv, counters: RunCounters) -> tuple[Finalisation, IngestRunRow]:
+    """The finalisation transaction (section comment). On failure: rollback of the finalisation only, the run is
+    closed ``partial`` with a run warning and ``Finalisation.error`` is set."""
+    db, repo = env.db, env.repo
+    try:
+        with db.transaction():
+            db.fault("finalise_start")
+            applied = reresolve_database(repo, env.cfg, env.run_id)
+            state = recompute_source_state(repo)
+            conflicts = emit_status_conflicts(repo, env.run_id)
+            counters.resolved_via_attendance = repo.count_owner_rows(Provenance.ATTENDEE_IN_MEETING.value)
+            db.fault("finalise_written")
+            row = finalize_run(repo, env.run_id, counters)
+        return Finalisation(applied, tuple(state), tuple(conflicts)), row
+    except EnvError:
+        raise
+    except Exception as exc:
+        message = f"finalisation failed ({type(exc).__name__}: {exc}); files already ingested are kept"
+        with db.transaction():
+            repo.add_warning(env.run_id, codes.E_INTERNAL_PARSE, message)
+            repo.update_ingest_run(env.run_id, **counters.as_columns())
+            repo.update_ingest_run(env.run_id, status="partial", finished_at=repo.now_iso())
+        failed = repo.get_ingest_run(env.run_id)
+        assert failed is not None
+        return Finalisation(error=message), failed
 
 
 @dataclass(frozen=True, slots=True)
@@ -1700,10 +2053,29 @@ class IngestResult:
     discovery_warnings: tuple[ParseWarning, ...]
     #: stored files of this folder not found by the scan (T-M5-13); empty when none
     missing: tuple[MissingOutcome, ...] = ()
+    #: the finalisation transaction (T-M5-14); in a dry run: what it would have done
+    finalisation: Finalisation = Finalisation()
+
+    @property
+    def reresolution(self) -> ReResolutionApplied:
+        return self.finalisation.reresolution
+
+    @property
+    def conflicts(self) -> tuple[int, ...]:
+        """Item ids that got ``W-STATUS-CONFLICT`` in this run."""
+        return self.finalisation.conflicts
+
+    @property
+    def finalisation_error(self) -> str | None:
+        return self.finalisation.error
+
+    @property
+    def dry_run(self) -> bool:
+        return self.run.dry_run
 
     @property
     def exit_code(self) -> int:
-        """5 when at least one file failed (spec 4.1), else 0."""
+        """5 when at least one file failed (spec 4.1), else 0 (T-M5-18 owns the final mapping)."""
         return int(ExitCode.INGEST_FILE_FAILURES) if self.counters.files_failed else int(ExitCode.OK)
 
 
@@ -1719,11 +2091,12 @@ def run_ingest(
     match: Callable[[IngestEnv, NewSource], MatchResult] | None = None,
     reingest: Callable[[IngestEnv, PlanEntry, int], FileWrite] | None = None,
 ) -> IngestResult:
-    """Ingest ``folder`` into the database at ``db_path`` (interim driver, see the section comment).
+    """Ingest ``folder`` into the database at ``db_path`` (section comment above).
 
     A bad folder raises ``FolderError`` (exit 4) before the database is opened. A second concurrent writer
-    raises ``EnvError`` (exit 4) from the lock. ``fault_hook`` is installed on the database after the run
-    row and the roster are committed (so a transaction-counting hook sees only the per-file transactions)."""
+    raises ``EnvError`` (exit 4) from the lock (never for a dry run). ``fault_hook`` is installed on the database
+    after the run row and the roster are committed (so a transaction-counting hook sees only the per-file
+    transactions, then the finalisation)."""
     discovery = discover(folder, recursive)
     root = discovery.folder_root
     with ingest_session(db_path, root, dry_run=dry_run, clock=run_ctx.clock) as session:
@@ -1747,5 +2120,7 @@ def run_ingest(
         for outcome in outcomes:
             counters.record(outcome)
         assert counters.invariant_holds(), "discovered = ingested + unchanged + empty + failed"
-        row = finish_run(db, repo, run_id, counters)
-        return IngestResult(session.run, row, counters, tuple(outcomes), plan, discovery.warnings, tuple(missing))
+        final, row = finalise_run(env, counters)
+        return IngestResult(
+            session.run, row, counters, tuple(outcomes), plan, discovery.warnings, tuple(missing), final
+        )
