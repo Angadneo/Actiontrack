@@ -12,8 +12,14 @@ migrations + repo base, and the CLI shell (argparse, global options, help). The 
 `handoff`/`fake` channels. **M2 (parsing core) and M3 (date resolver) are also implemented and accepted**
 (1983 tests): `actiontrack.parsing.parse_document` is the pure per-file entry point (reader, markdown
 regions, checkboxes, meeting metadata, items, `task_text`, due resolution via `domain.dates.resolve_due`);
-owner extraction is NOT there yet (`owner_hook` is None, `task_text` still starts with the owner clause)
-and arrives in M4. Next is **M4** (people & owners), then **M5** (ingest service). Before writing any
+owner extraction is implemented but NOT the default analyzer: pass
+`analyzer=OwnerAnalyzer(is_known_name=...)` (from `parsing/owner_phrase.py`) to `parse_document` to get
+`owner_hook` and owner-free `task_text` (making it the default changes the golden files, so M5 decides).
+**M4 (people & owners) is implemented and accepted** (2364 tests): `resolution/people.py`
+(`PeopleRegistry`, `resolve_person_query`, `file_transaction`), `resolution/owners.py` (§10.3 resolution,
+pure whole-DB `re_resolve`, ambiguity display hooks) and people persistence in `store/repo.py`
+(`person_alias.auto` was added to migration 0001; databases created before that lack it). Next is **M5**
+(ingest service), then M6/M7/M9. Before writing any
 implementation code, read the relevant task file in `specs/tasks/` for the milestone you're working on —
 each task lists size, dependencies, spec references, files to touch, the tests to write first, and a
 done-when condition. Hand-off notes from M1 live in the docstring of `tests/integration/test_m1_exit.py`.

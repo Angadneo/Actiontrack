@@ -29,7 +29,7 @@ ENTITIES = {
     "FollowupDraft": "followup_draft",
 }
 # columns the schema has that the spec table does not name (documented additions)
-EXTRA_COLUMNS = {"ingest_warning": {"id"}, "followup_draft": set()}
+EXTRA_COLUMNS = {"ingest_warning": {"id"}, "followup_draft": set(), "person_alias": {"auto"}}
 # Entities whose spec row lists `id` implicitly through a surrogate key we add
 SURROGATE_ID = {"ingest_warning"}
 
@@ -104,7 +104,7 @@ def test_spec_7_2_columns_present(conn, repo_root):
         " source_state created_at updated_at",
         "item_owner": "item_id ordinal owner_raw role person_id owner_status candidates provenance",
         "person": "id first_name last_name qualifier display_name name_key identity_key email origin verified",
-        "person_alias": "person_id alias alias_key",
+        "person_alias": "person_id alias alias_key auto",
         "meeting": "id source_file_id meeting_date date_source title",
         "meeting_attendee": "meeting_id raw_name person_id email_hint",
         "source_file": "id folder_root rel_path content_sha256 size_bytes mtime status failure_code last_run_id"

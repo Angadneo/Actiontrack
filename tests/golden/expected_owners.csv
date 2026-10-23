@@ -1,0 +1,120 @@
+file,line,ordinal,owner_raw,role,status,persons,provenance,display
+2026-09-01-quote-portal-kickoff.md,9,0,Priya,owner,resolved,priya-nair,attendee_in_meeting,Priya Nair
+2026-09-01-quote-portal-kickoff.md,10,0,Rahul,owner,resolved,rahul-mehta,attendee_in_meeting,Rahul Mehta
+2026-09-01-quote-portal-kickoff.md,11,0,Anita,owner,resolved,anita-desai,unique_first_name,Anita Desai
+2026-09-01-quote-portal-kickoff.md,12,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-09-02-standup.md,9,0,Rahul,owner,resolved,rahul-mehta,attendee_in_meeting,Rahul Mehta
+2026-09-02-standup.md,10,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-09-03-billing-migration-sync.md,9,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-09-03-billing-migration-sync.md,10,0,Rahul,owner,resolved,rahul-verma,attendee_in_meeting,Rahul Verma
+2026-09-03-billing-migration-sync.md,11,0,Priya,owner,resolved,priya-shah,attendee_in_meeting,Priya Shah
+2026-09-03-billing-migration-sync.md,12,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-09-08-quote-portal-weekly.md,9,0,Priya N.,owner,resolved,priya-nair,initial_form,Priya Nair
+2026-09-08-quote-portal-weekly.md,10,0,Rahul,owner,resolved,rahul-mehta,attendee_in_meeting,Rahul Mehta
+2026-09-08-quote-portal-weekly.md,11,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-09-08-quote-portal-weekly.md,12,0,Rahul,owner,resolved,rahul-mehta,attendee_in_meeting,Rahul Mehta
+2026-09-09-qa-standup.md,9,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-09-09-qa-standup.md,10,0,Priya,owner,resolved,priya-shah,attendee_in_meeting,Priya Shah
+2026-09-10-acme-renewal-prep.md,9,0,Lena,owner,resolved,lena-fischer,unique_first_name,Lena Fischer
+2026-09-10-acme-renewal-prep.md,10,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-09-10-acme-renewal-prep.md,11,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-09-10-acme-renewal-prep.md,12,0,Someone,owner,unassigned,,none,Someone
+2026-09-14-onboarding-flow-design.md,9,0,Anita,owner,resolved,anita-desai,unique_first_name,Anita Desai
+2026-09-14-onboarding-flow-design.md,10,0,Priya,owner,resolved,priya-shah,attendee_in_meeting,Priya Shah
+2026-09-14-onboarding-flow-design.md,11,0,Rahul,owner,resolved,rahul-verma,attendee_in_meeting,Rahul Verma
+2026-09-14-onboarding-flow-design.md,12,0,Lena,owner,resolved,lena-fischer,unique_first_name,Lena Fischer
+2026-09-15-quote-portal-weekly.md,9,0,Priya,owner,resolved,priya-nair,attendee_in_meeting,Priya Nair
+2026-09-15-quote-portal-weekly.md,10,0,Anita,owner,resolved,anita-desai,unique_first_name,Anita Desai
+2026-09-15-quote-portal-weekly.md,11,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-09-15-quote-portal-weekly.md,12,0,Rahul,owner,resolved,rahul-mehta,attendee_in_meeting,Rahul Mehta
+2026-09-16-standup.md,11,0,Lena,owner,resolved,lena-fischer,unique_first_name,Lena Fischer
+2026-09-16-standup.md,12,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-09-17-billing-migration-sync.md,9,0,Priya,owner,ambiguous,priya-nair|priya-shah,none,?Priya (Nair | Shah)
+2026-09-17-billing-migration-sync.md,10,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-09-17-billing-migration-sync.md,11,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-09-17-billing-migration-sync.md,12,0,Rahul,owner,resolved,rahul-verma,attendee_in_meeting,Rahul Verma
+2026-09-18-design-review.md,11,0,anita,owner,resolved,anita-desai,unique_first_name,Anita Desai
+2026-09-18-design-review.md,12,0,Anita,owner,resolved,anita-desai,unique_first_name,Anita Desai
+2026-09-18-design-review.md,12,1,Rahul,owner,resolved,rahul-mehta,attendee_in_meeting,Rahul Mehta
+2026-09-18-design-review.md,13,0,Lena,owner,resolved,lena-fischer,unique_first_name,Lena Fischer
+2026-09-18-design-review.md,13,1,Priya,with,resolved,priya-nair,attendee_in_meeting,Priya Nair
+2026-09-18-design-review.md,14,0,Everyone,owner,unassigned,,none,Everyone
+2026-09-18-design-review.md,15,0,TBD,owner,unassigned,,none,TBD
+2026-09-21-incident-review.md,14,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-09-21-incident-review.md,15,0,Rahul,owner,resolved,rahul-verma,attendee_in_meeting,Rahul Verma
+2026-09-21-incident-review.md,16,0,Priya,owner,resolved,priya-shah,attendee_in_meeting,Priya Shah
+2026-09-21-incident-review.md,17,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-09-22-quote-portal-weekly.md,9,0,Anita,owner,resolved,anita-desai,unique_first_name,Anita Desai
+2026-09-22-quote-portal-weekly.md,10,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-09-22-quote-portal-weekly.md,11,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-09-22-quote-portal-weekly.md,12,0,Rahul,owner,resolved,rahul-mehta,attendee_in_meeting,Rahul Mehta
+2026-09-23-standup.md,8,0,Rahul,owner,ambiguous,rahul-mehta|rahul-verma,none,?Rahul (Mehta | Verma)
+2026-09-23-standup.md,9,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-09-24-onboarding-flow-design.md,9,0,Anita,owner,resolved,anita-desai,unique_first_name,Anita Desai
+2026-09-24-onboarding-flow-design.md,10,0,Priya,owner,resolved,priya-shah,attendee_in_meeting,Priya Shah
+2026-09-24-onboarding-flow-design.md,11,0,Lena,owner,resolved,lena-fischer,unique_first_name,Lena Fischer
+2026-09-24-onboarding-flow-design.md,12,0,Rahul,owner,resolved,rahul-verma,attendee_in_meeting,Rahul Verma
+2026-09-25-qa-sync.md,9,0,Priya,owner,resolved,priya-shah,attendee_in_meeting,Priya Shah
+2026-09-25-qa-sync.md,10,0,Rahul,owner,resolved,rahul-verma,attendee_in_meeting,Rahul Verma
+2026-09-28-acme-renewal-checkin.md,9,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-09-28-acme-renewal-checkin.md,10,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-09-28-acme-renewal-checkin.md,11,0,Lena,owner,resolved,lena-fischer,unique_first_name,Lena Fischer
+2026-09-28-acme-renewal-checkin.md,12,0,Priya,owner,resolved,priya-nair,attendee_in_meeting,Priya Nair
+2026-09-29-billing-cutover-planning.md,9,0,Priya S.,owner,resolved,priya-shah,initial_form,Priya Shah
+2026-09-29-billing-cutover-planning.md,10,0,Priya N.,owner,resolved,priya-nair,initial_form,Priya Nair
+2026-09-29-billing-cutover-planning.md,11,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-09-29-billing-cutover-planning.md,12,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-09-30-q4-offsite.md,9,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-09-30-q4-offsite.md,10,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-09-30-q4-offsite.md,11,0,Lena,owner,resolved,lena-fischer,unique_first_name,Lena Fischer
+2026-09-30-q4-offsite.md,12,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-09-30-q4-offsite.md,16,0,Priya,owner,ambiguous,priya-nair|priya-shah,none,?Priya (Nair | Shah)
+2026-09-30-q4-offsite.md,17,0,Rahul,owner,ambiguous,rahul-mehta|rahul-verma,none,?Rahul (Mehta | Verma)
+2026-09-30-q4-offsite.md,18,0,Everyone,owner,unassigned,,none,Everyone
+2026-09-30-standup.md,11,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-09-30-standup.md,12,0,Priya,owner,resolved,priya-nair,attendee_in_meeting,Priya Nair
+2026-10-01-quote-portal-weekly.md,9,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-10-01-quote-portal-weekly.md,10,0,Rahul,owner,resolved,rahul-mehta,attendee_in_meeting,Rahul Mehta
+2026-10-01-quote-portal-weekly.md,11,0,Anita,owner,resolved,anita-desai,unique_first_name,Anita Desai
+2026-10-01-quote-portal-weekly.md,12,0,Team,owner,unassigned,,none,Team
+2026-10-02-finance-sync.md,9,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-10-02-finance-sync.md,10,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-10-02-finance-sync.md,11,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-10-02-finance-sync.md,12,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-10-03-sales-pipeline.md,6,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-10-03-sales-pipeline.md,7,0,Lena,owner,resolved,lena-fischer,unique_first_name,Lena Fischer
+2026-10-05-onboarding-retro.md,9,0,Rahul,owner,resolved,rahul-verma,attendee_in_meeting,Rahul Verma
+2026-10-05-onboarding-retro.md,10,0,Lena,owner,resolved,lena-fischer,unique_first_name,Lena Fischer
+2026-10-05-onboarding-retro.md,11,0,Anita,owner,resolved,anita-desai,unique_first_name,Anita Desai
+2026-10-05-onboarding-retro.md,12,0,Priya,owner,resolved,priya-shah,attendee_in_meeting,Priya Shah
+2026-10-06-quote-portal-weekly.md,9,0,Rahul,owner,resolved,rahul-mehta,attendee_in_meeting,Rahul Mehta
+2026-10-06-quote-portal-weekly.md,10,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-10-06-quote-portal-weekly.md,11,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-10-06-quote-portal-weekly.md,12,0,Priya,owner,resolved,priya-nair,attendee_in_meeting,Priya Nair
+2026-10-07-standup.md,9,0,Rahul,owner,ambiguous,rahul-mehta|rahul-verma,none,?Rahul (Mehta | Verma)
+2026-10-07-standup.md,10,0,Anita,owner,resolved,anita-desai,unique_first_name,Anita Desai
+2026-10-08-billing-go-no-go.md,9,0,Priya,owner,ambiguous,priya-nair|priya-shah,none,?Priya (Nair | Shah)
+2026-10-08-billing-go-no-go.md,10,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-10-08-billing-go-no-go.md,11,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-10-08-billing-go-no-go.md,12,0,Priya N.,owner,resolved,priya-nair,initial_form,Priya Nair
+2026-10-09-security-review.md,18,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-10-09-security-review.md,19,0,Rahul,owner,resolved,rahul-verma,attendee_in_meeting,Rahul Verma
+2026-10-09-security-review.md,20,0,Priya,owner,resolved,priya-shah,attendee_in_meeting,Priya Shah
+2026-10-09-security-review.md,21,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-10-10-sales-weekly.md,9,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-10-10-sales-weekly.md,10,0,Lena,owner,resolved,lena-fischer,unique_first_name,Lena Fischer
+2026-10-10-sales-weekly.md,11,0,Lena,owner,resolved,lena-fischer,unique_first_name,Lena Fischer
+2026-10-12-billing-post-cutover.md,9,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+2026-10-12-billing-post-cutover.md,10,0,Priya,owner,resolved,priya-shah,attendee_in_meeting,Priya Shah
+2026-10-12-billing-post-cutover.md,11,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-10-12-billing-post-cutover.md,12,0,Rahul,owner,resolved,rahul-verma,attendee_in_meeting,Rahul Verma
+2026-10-13-quote-portal-weekly.md,9,0,Rahul,owner,resolved,rahul-mehta,attendee_in_meeting,Rahul Mehta
+2026-10-13-quote-portal-weekly.md,10,0,Anita,owner,resolved,anita-desai,unique_first_name,Anita Desai
+2026-10-13-quote-portal-weekly.md,11,0,Priya,owner,resolved,priya-nair,attendee_in_meeting,Priya Nair
+2026-10-13-quote-portal-weekly.md,12,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-10-14-acme-renewal-wrapup.md,9,0,Karan,owner,resolved,karan-joshi,unique_first_name,Karan Joshi
+2026-10-14-acme-renewal-wrapup.md,10,0,Lena,owner,resolved,lena-fischer,unique_first_name,Lena Fischer
+2026-10-14-acme-renewal-wrapup.md,11,0,Meera,owner,resolved,meera-iyer,unique_first_name,Meera Iyer
+2026-10-14-acme-renewal-wrapup.md,12,0,Priya,owner,resolved,priya-nair,attendee_in_meeting,Priya Nair
+untitled.md,1,0,Sam,owner,resolved,sam-okafor,unique_first_name,Sam Okafor
+untitled.md,2,0,Priya,owner,ambiguous,priya-nair|priya-shah,none,?Priya (Nair | Shah)

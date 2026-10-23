@@ -29,6 +29,7 @@ CREATE TABLE person_alias (
     person_id TEXT NOT NULL REFERENCES person(id) ON DELETE RESTRICT,
     alias     TEXT NOT NULL,
     alias_key TEXT NOT NULL,
+    auto      INTEGER NOT NULL DEFAULT 0 CHECK (auto IN (0, 1)),
     PRIMARY KEY (person_id, alias_key)
 );
 

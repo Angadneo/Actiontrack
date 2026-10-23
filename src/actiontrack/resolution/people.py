@@ -13,9 +13,8 @@ rolled-back file transaction) from DB rows:
 1. the roster (``add_roster``; persons keep the config-computed ``RosterPerson.person_id``);
 2. the stored ``person`` rows (``load_person``: attendee-origin, provisional and historical
    roster rows, exactly as stored);
-3. the stored ``person_alias`` rows (``load_alias``). The table has no ``auto`` column, so the
-   loader marks as ``auto=True`` every stored alias row that is not one of that person's
-   *current* roster aliases (``add_roster`` already adds those with ``auto=False``);
+3. the stored ``person_alias`` rows (``load_alias``; the table carries an ``auto`` column so the
+   flag round-trips; ``Repo.load_registry`` performs the whole rebuild);
 4. optionally the attendee spellings (``note_spelling``) when display names must be recomputed.
 
 Mutation model: explicit mutators (documented below) change the registry in place;
@@ -56,11 +55,14 @@ step 1 while that form is shared by >= 2 known people (G-C28).
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
+from typing import Any
 
 from actiontrack.config import Roster, RosterPerson
 from actiontrack.domain.models import Person, PersonOrigin
+from actiontrack.errors import AmbiguousOwnerError, NotFoundError
 from actiontrack.domain.names import (
     QUALIFIER_SEP,
     classify_key_kind,
@@ -519,3 +521,156 @@ class PeopleRegistry:
 
     def non_full_people(self) -> tuple[Person, ...]:
         return tuple(p for p in self.people() if not is_full(p))
+
+
+# ====================================================================================== T-M4-07
+# Transactional glue between the registry and the per-file database transaction (NFR-REL-01).
+# All SQL lives in ``store/repo.py`` (``Repo.upsert_roster`` / ``persist_registry`` /
+# ``load_registry`` / ``merge_person``); this module only keeps the registry rollback point.
+
+
+@contextlib.contextmanager
+def file_transaction(db: Any, registry: PeopleRegistry) -> Iterator[None]:
+    """Per-file ingest transaction: ``db.transaction()`` plus a registry rollback point.
+
+    ``registry.snapshot()`` is taken before ``BEGIN``; on ANY exception (including one raised by
+    COMMIT / the ``before_commit`` fault hook) the registry is ``restore()``d and the error is
+    re-raised, so a failed file leaves neither DB rows nor registry state behind. On success
+    nothing is undone. Usage (M5)::
+
+        with file_transaction(db, registry):
+            ...registry mutations + repo.persist_registry(registry) + item writes...
+    """
+    snap = registry.snapshot()
+    try:
+        with db.transaction():
+            yield
+    except BaseException:
+        registry.restore(snap)
+        raise
+
+
+# ====================================================================================== T-M4-13
+# Person query resolution for ``list --owner`` and ``followup`` (spec 10.5, FR-02.6, FR-04.1).
+#
+# ``resolve_person_query(query, registry) -> Person`` or raises
+#   ``PersonNotFound``  (a ``NotFoundError``, exit 3): ``.query``, ``.near`` (<= 3 ``Person``,
+#                       sorted by (edit distance, identity key); NEVER auto-used) and a
+#                       "did you mean" hint.
+#   ``PersonAmbiguous`` (an ``AmbiguousOwnerError``, exit 6): ``.query``, ``.candidates`` (ids,
+#                       sorted), ``.candidate_lines`` (``Full Name <email>`` / ``Full Name (no email)``)
+#                       and the hint "re-run with the full name"; ``format()`` prints every candidate.
+# Order: person id -> email (case-insensitive) -> exact identity key / full name / alias key
+# (union; exactly one chosen, >= 2 ambiguous) -> exact provisional key -> bare first name (one
+# full person chosen, >= 2 ambiguous) -> not found. Provisional / attendee-only people are
+# matchable by their exact key (``list`` may use them). ``followup`` must additionally check
+# ``has_recipient(person)`` (FR-04.7).
+
+
+def _person_label(p: Person) -> str:
+    return p.display_name or f"{p.first_name} {p.last_name or ''}".strip()
+
+
+class PersonNotFound(NotFoundError):
+    def __init__(self, query: str, near: Iterable[Person] = ()) -> None:
+        self.query = query
+        self.near: tuple[Person, ...] = tuple(near)
+        self.near_names: tuple[str, ...] = tuple(_person_label(p) for p in self.near)
+        names = ", ".join(self.near_names)
+        super().__init__(
+            f"no person matches {query!r}",
+            next_step=(f"did you mean: {names}?" if names else "check the name, email or id"),
+        )
+
+
+class PersonAmbiguous(AmbiguousOwnerError):
+    def __init__(self, query: str, candidates: Iterable[str], lines: Iterable[str]) -> None:
+        self.query = query
+        self.candidates: tuple[str, ...] = tuple(sorted(candidates))
+        self.candidate_lines: tuple[str, ...] = tuple(lines)
+        super().__init__(f"{query!r} matches more than one person", next_step="re-run with the full name")
+
+    def format(self) -> str:
+        body = "\n".join(f"  {line}" for line in self.candidate_lines)
+        return f"{self.what}:\n{body}\nNext: {self.next_step}"
+
+
+def edit_distance(a: str, b: str) -> int:
+    """Levenshtein distance (insert / delete / substitute), deterministic, no dependency."""
+    if a == b:
+        return 0
+    if not a:
+        return len(b)
+    if not b:
+        return len(a)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+def has_recipient(person: Person) -> bool:
+    """FR-04.7 precondition helper: a person can receive a follow-up only with an email."""
+    return bool(person.email)
+
+
+def _choose(query: str, ids: Iterable[str], registry: PeopleRegistry) -> Person | None:
+    ordered = sorted(set(ids))
+    if not ordered:
+        return None
+    if len(ordered) > 1:
+        from actiontrack.resolution.owners import candidate_lines  # lazy: owners imports this module
+
+        raise PersonAmbiguous(query, ordered, candidate_lines(ordered, registry))
+    return registry.get(ordered[0])
+
+
+def _near_matches(key: str, registry: PeopleRegistry) -> tuple[Person, ...]:
+    forms: list[tuple[str, str, str]] = [(base_key(p.identity_key), p.identity_key, p.id) for p in registry.people()]
+    for rec in registry.aliases():
+        p = registry.get(rec.person_id)
+        if p is not None:
+            forms.append((rec.alias_key, p.identity_key, p.id))
+    best: dict[str, tuple[int, str]] = {}
+    for form, ident, pid in forms:
+        d = edit_distance(key, form)
+        if d <= 2 and (pid not in best or (d, ident) < best[pid]):
+            best[pid] = (d, ident)
+    ordered = sorted(best, key=lambda pid: (best[pid][0], best[pid][1], pid))[:3]
+    return tuple(registry.get(pid) for pid in ordered)  # type: ignore[misc]
+
+
+def resolve_person_query(query: str, registry: PeopleRegistry) -> Person:
+    """Resolve an ``--owner`` / ``followup`` argument to exactly one known person (spec 10.5)."""
+    text = (query or "").strip()
+    if not text:
+        raise PersonNotFound(query or "")
+    # 1. person id (exact, then case-insensitive)
+    if (p := registry.get(text)) is not None:
+        return p
+    low = text.casefold()
+    by_id = [p for p in registry.people() if p.id.casefold() == low]
+    if len(by_id) == 1:
+        return by_id[0]
+    # 2. email, case-insensitive
+    by_email = [p.id for p in registry.people() if p.email and p.email.strip().casefold() == low]
+    if (p := _choose(text, by_email, registry)) is not None:
+        return p
+    # 3. exact identity key / full name / alias key (union), then exact provisional key
+    key = name_key(text)
+    if not key:
+        raise PersonNotFound(text)
+    ids = set(registry.lookup_identity(key)) | set(registry.lookup_alias(key))
+    ids |= {p.id for p in registry.people() if is_full(p) and name_key(registry.full_name(p.id)) == key}
+    if (p := _choose(text, ids, registry)) is not None:
+        return p
+    pkey = provisional_key(text)
+    if pkey is not None and (pid := registry.lookup_non_full(pkey)) is not None:
+        return registry.get(pid)  # type: ignore[return-value]
+    # 4. first-name-only query
+    if len(key.split()) == 1 and (p := _choose(text, registry.lookup_first_name(key), registry)) is not None:
+        return p
+    raise PersonNotFound(text, _near_matches(key, registry))
