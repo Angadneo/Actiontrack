@@ -39,16 +39,51 @@ Public API
     ``insert_attendees(meeting_id, [(raw_name, person_id, email_hint)]) -> int`` / ``list_attendees``
     ``merge_person(provisional_id, into_id, *, alias=None, alias_key=None)``  repoint + alias + delete
     Pair with ``resolution.people.file_transaction(db, registry)`` for rollback of registry state.
+Ingest entities (T-M5-01/02; row dataclasses are frozen, every list method has an explicit ORDER BY,
+no method commits and none deletes an ``item_source`` or ``item_link`` row, BR-08/BR-16):
+    ``now_iso() -> str``  current UTC timestamp ``YYYY-MM-DDTHH:MM:SSZ`` from the injected ``Clock``
+                         (``Repo(db, clock=None)``: ``clock`` or ``db.clock`` or ``SystemClock``).
+    runs:      ``insert_ingest_run(folder_root, *, dry_run=False, started_at=None) -> int``,
+               ``update_ingest_run(run_id, **fields)``, ``bump_run_counters(run_id, **deltas)``,
+               ``get_ingest_run(id) -> IngestRunRow | None``, ``list_ingest_runs(status=None)``
+    files:     ``insert_source_file(folder_root, rel_path, *, status, ...) -> int``,
+               ``update_source_file(id, **fields)``, ``get_source_file(folder_root, rel_path)``,
+               ``get_source_file_by_id(id)``, ``list_source_files(folder_root=None, status=None)``
+    meetings:  ``insert_meeting(source_file_id, meeting_date, date_source, title) -> int``,
+               ``update_meeting(id, **fields)``, ``get_meeting_for_file(source_file_id)``
+    items:     ``insert_action_item(*, description, task_text, description_core_key, ...) -> int``
+               (ids come from AUTOINCREMENT, BR-11), ``get_action_item(id) -> ActionItemRow | None``,
+               ``list_action_items(status=None)``, ``touch_item(item_id, changes, *, owners=None,
+               event_kind=None, run_id=None) -> dict`` (the ONLY writer of business columns, bumps
+               ``updated_at`` only on a real change, BR-15), ``set_item_owners(item_id, owners) -> bool``,
+               ``list_item_owners(item_id)``
+    sources:   ``insert_item_source(*, item_id, source_file_id, meeting_id, ...) -> int``,
+               ``update_item_source(id, **fields)``, ``get_item_source(id)``,
+               ``list_item_sources(item_id=None, source_file_id=None, present=None)``,
+               ``set_source_owners(item_source_id, owners) -> bool``, ``list_source_owners(item_source_id)``,
+               ``list_all_source_owners()``
+    links:     ``insert_link(from_id, to_id, kind, reason=None, run_id=None) -> bool`` (possible_duplicate is
+               stored once with from < to; completed_by keeps its direction; INSERT OR IGNORE),
+               ``links_of(item_id)`` (both ends), ``list_links(kind=None)``
+    events:    ``record_event(item_id, kind, before, after, run_id, ts=None) -> int | None`` (idempotent per
+               ``(item_id, kind, run_id, payload)``), ``list_events(item_id=None, run_id=None)``
+    warnings:  ``add_warning(run_id, code, message, *, source_file_id=None, line=None) -> int``,
+               ``list_warnings(run_id=None, source_file_id=None)``
+``canonical_json(obj) -> str``  sorted keys, compact, non-ASCII kept (used for event payloads).
 Re-exported from ``actiontrack.domain.models``: ``format_item_id``, ``parse_item_id``.
 """
 
 from __future__ import annotations
 
 import dataclasses
+import datetime as _dt
+import enum
+import json
 import sqlite3
 import unicodedata
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
+from actiontrack.clock import Clock, SystemClock
 from actiontrack.config import Roster
 from actiontrack.domain.models import Person, PersonOrigin, format_item_id, parse_item_id
 from actiontrack.errors import InternalError
@@ -56,8 +91,21 @@ from actiontrack.resolution.people import PeopleRegistry
 from actiontrack.store.db import Database
 
 __all__ = [
+    "BUSINESS_COLUMNS",
+    "EVENT_KINDS",
     "VERBATIM_COLUMNS",
+    "ActionItemRow",
+    "IngestRunRow",
+    "IngestWarningRow",
+    "ItemEventRow",
+    "ItemLinkRow",
+    "ItemOwnerRow",
+    "ItemSourceOwnerRow",
+    "ItemSourceRow",
+    "MeetingRow",
     "Repo",
+    "SourceFileRow",
+    "canonical_json",
     "format_item_id",
     "parse_item_id",
     "to_storage_raw",
@@ -85,9 +133,259 @@ def to_storage_raw(s: str) -> str:
     return s
 
 
+# ---------------------------------------------------------------------------------------------
+# Ingest-entity row types (T-M5-01). Frozen value objects; dates are ``datetime.date``, booleans
+# ``bool``, JSON columns decoded. Spec 7.2 names the columns.
+# ---------------------------------------------------------------------------------------------
+EVENT_KINDS: tuple[str, ...] = (
+    "created",
+    "source_added",
+    "source_removed",
+    "merged",
+    "updated_from_source",
+    "status_changed",
+    "owner_changed",
+    "manual_done",
+)
+LINK_KINDS: tuple[str, ...] = ("possible_duplicate", "completed_by")
+LINK_REASONS: tuple[str, ...] = (
+    "due_differs",
+    "owner_differs",
+    "status_differs",
+    "same_file",
+    "fuzzy",
+    "recurrence",
+    "outside_window",
+    "owner_unresolved",
+)
+#: ``action_item`` columns that carry business meaning: only ``touch_item`` writes them after insert and
+#: only a real change to one of them (or to the item's owners) moves ``updated_at`` (BR-15, spec 7.2).
+BUSINESS_COLUMNS: tuple[str, ...] = (
+    "description",
+    "task_text",
+    "description_core_key",
+    "status",
+    "completion_origin",
+    "completed_at",
+    "completion_evidence_source_id",
+    "due_raw",
+    "due_raw_other",
+    "due_date",
+    "due_confidence",
+    "due_rule",
+    "due_reason",
+    "source_state",
+)
+RUN_COUNTERS: tuple[str, ...] = (
+    "files_discovered",
+    "files_ingested",
+    "files_unchanged",
+    "files_empty",
+    "files_failed",
+    "items_new",
+    "items_merged",
+    "items_updated",
+    "items_unchanged",
+    "possible_duplicates",
+    "already_done_in_note",
+    "resolved_via_attendance",
+)
+
+
+def canonical_json(obj: object) -> str:
+    """Canonical JSON for event payloads: sorted keys, compact separators, non-ASCII kept."""
+
+    def default(value: object) -> object:
+        if isinstance(value, _dt.datetime | _dt.date):
+            return value.isoformat()
+        if isinstance(value, enum.Enum):
+            return value.value
+        if isinstance(value, set | frozenset):
+            return sorted(value)
+        if dataclasses.is_dataclass(value) and not isinstance(value, type):
+            return dataclasses.asdict(value)
+        raise TypeError(f"not JSON serialisable: {type(value).__name__}")
+
+    return json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":"), default=default)
+
+
+def _date(value: str | None) -> _dt.date | None:
+    return _dt.date.fromisoformat(value) if value else None
+
+
+def _load(cls: type, row: sqlite3.Row, **conv: object) -> object:
+    values = {}
+    for f in dataclasses.fields(cls):
+        raw = row[f.name]
+        fn = conv.get(f.name)
+        values[f.name] = fn(raw) if fn is not None and raw is not None else raw
+    return cls(**values)
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class IngestRunRow:
+    id: int
+    started_at: str
+    finished_at: str | None
+    folder_root: str
+    status: str
+    dry_run: bool
+    files_discovered: int
+    files_ingested: int
+    files_unchanged: int
+    files_empty: int
+    files_failed: int
+    items_new: int
+    items_merged: int
+    items_updated: int
+    items_unchanged: int
+    possible_duplicates: int
+    already_done_in_note: int
+    resolved_via_attendance: int
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class SourceFileRow:
+    id: int
+    folder_root: str
+    rel_path: str
+    content_sha256: str | None
+    size_bytes: int | None
+    mtime: str | None
+    status: str
+    failure_code: str | None
+    last_run_id: int | None
+    first_seen_run: int | None
+    last_ingested_run: int | None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class MeetingRow:
+    id: int
+    source_file_id: int
+    meeting_date: _dt.date | None
+    date_source: str
+    title: str | None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ActionItemRow:
+    id: int
+    description: str
+    task_text: str
+    description_core_key: str
+    status: str
+    completion_origin: str | None
+    completed_at: str | None
+    completion_evidence_source_id: int | None
+    due_raw: str | None
+    due_raw_other: str | None
+    due_date: _dt.date | None
+    due_confidence: str
+    due_rule: str | None
+    due_reason: str | None
+    source_state: str
+    created_at: str
+    updated_at: str
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ItemOwnerRow:
+    item_id: int
+    ordinal: int
+    owner_raw: str | None
+    role: str
+    person_id: str | None
+    owner_status: str
+    candidates: tuple[str, ...]
+    provenance: str
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ItemSourceRow:
+    id: int
+    item_id: int
+    source_file_id: int
+    meeting_id: int | None
+    line_start: int
+    line_end: int
+    raw_text: str
+    section_heading: str | None
+    checkbox_state: str
+    occurrence_index: int
+    block_hash: str
+    present: bool
+    first_seen_run: int | None
+    last_seen_run: int | None
+    description: str | None
+    task_text: str | None
+    core_key: str | None
+    due_raw: str | None
+    due_raw_other: str | None
+    due_date: _dt.date | None
+    due_confidence: str
+    due_rule: str | None
+    due_reason: str | None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ItemSourceOwnerRow:
+    item_source_id: int
+    ordinal: int
+    owner_raw: str | None
+    role: str
+    person_id: str | None
+    owner_status: str
+    provenance: str
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ItemLinkRow:
+    from_item_id: int
+    to_item_id: int
+    kind: str
+    reason: str | None
+    created_run: int | None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ItemEventRow:
+    id: int
+    item_id: int
+    ts: str
+    kind: str
+    before: object
+    after: object
+    run_id: int | None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class IngestWarningRow:
+    id: int
+    run_id: int
+    source_file_id: int | None
+    line: int | None
+    code: str
+    message: str
+
+
+def _owner_tuple(o: object) -> tuple[object, ...]:
+    """Comparable, storage-normalised form of a ``ResolvedOwner`` (ordinal is positional)."""
+    raw = getattr(o, "owner_raw", None)
+    return (
+        None if raw is None else to_storage_text(raw),
+        str(getattr(o, "role", "owner")),
+        getattr(o, "person_id", None),
+        str(getattr(o, "status", None) or getattr(o, "owner_status", "unassigned")),
+        tuple(sorted(getattr(o, "candidates", ()) or ())),
+        str(getattr(o, "provenance", "none")),
+    )
+
+
 class Repo:
-    def __init__(self, db: Database) -> None:
+    def __init__(self, db: Database, clock: Clock | None = None) -> None:
         self.db = db
+        self.clock: Clock = clock or getattr(db, "clock", None) or SystemClock()
         self._columns: dict[str, frozenset[str]] = {}
 
     @property
@@ -121,6 +419,10 @@ class Repo:
         for column, value in values.items():
             if column not in allowed:
                 raise InternalError(f"unknown column {table}.{column}")
+            if isinstance(value, _dt.datetime | _dt.date):
+                value = value.isoformat()
+            elif isinstance(value, bool):
+                value = int(value)
             if isinstance(value, str):
                 value = (
                     to_storage_raw(value)
@@ -330,3 +632,534 @@ class Repo:
         ).fetchone():
             self.insert_row("person_alias", {"person_id": into_id, "alias": text, "alias_key": key, "auto": 1})
         self.conn.execute("DELETE FROM person WHERE id = ?", (provisional_id,))
+
+    # =========================================================================================
+    # Ingest entities (T-M5-01, T-M5-02). No method here commits (the caller owns the transaction).
+    # =========================================================================================
+    def now_iso(self) -> str:
+        """Current UTC instant from the injected clock, ``YYYY-MM-DDTHH:MM:SSZ`` (BR-18, AC-09.4)."""
+        return self.clock.now_utc().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def _check_fields(self, table: str, fields: Iterable[str], *, forbidden: Iterable[str] = ("id",)) -> None:
+        allowed = self._table_columns(table)
+        banned = set(forbidden)
+        for name in fields:
+            if name not in allowed or name in banned:
+                raise InternalError(f"column {table}.{name} cannot be set here")
+
+    # ----------------------------------------------------------- ingest_run
+    def insert_ingest_run(self, folder_root: str, *, dry_run: bool = False, started_at: str | None = None) -> int:
+        return self.insert_row(
+            "ingest_run",
+            {
+                "started_at": started_at or self.now_iso(),
+                "folder_root": folder_root,
+                "dry_run": dry_run,
+            },
+        )
+
+    def update_ingest_run(self, run_id: int, **fields: object) -> None:
+        self._check_fields("ingest_run", fields)
+        if fields:
+            self.update_row("ingest_run", "id", run_id, fields)
+
+    def bump_run_counters(self, run_id: int, **deltas: int) -> None:
+        """Add ``delta`` to each named counter column of the run (names are validated)."""
+        for name in deltas:
+            if name not in RUN_COUNTERS:
+                raise InternalError(f"unknown run counter {name!r}")
+        for name, delta in sorted(deltas.items()):
+            self.conn.execute(
+                f'UPDATE ingest_run SET "{name}" = "{name}" + ? WHERE id = ?', (int(delta), run_id)
+            )
+
+    def get_ingest_run(self, run_id: int) -> IngestRunRow | None:
+        row = self.conn.execute("SELECT * FROM ingest_run WHERE id = ?", (run_id,)).fetchone()
+        return None if row is None else _load(IngestRunRow, row, dry_run=bool)
+
+    def list_ingest_runs(self, status: str | None = None) -> list[IngestRunRow]:
+        sql = "SELECT * FROM ingest_run"
+        params: tuple[object, ...] = ()
+        if status is not None:
+            sql += " WHERE status = ?"
+            params = (status,)
+        rows = self.conn.execute(sql + " ORDER BY id", params).fetchall()
+        return [_load(IngestRunRow, r, dry_run=bool) for r in rows]
+
+    # ----------------------------------------------------------- source_file
+    def insert_source_file(
+        self,
+        folder_root: str,
+        rel_path: str,
+        *,
+        status: str,
+        content_sha256: str | None = None,
+        size_bytes: int | None = None,
+        mtime: str | None = None,
+        failure_code: str | None = None,
+        run_id: int | None = None,
+        ingested: bool = False,
+    ) -> int:
+        """New ``source_file`` row; ``first_seen_run`` and ``last_run_id`` = ``run_id``; ``last_ingested_run``
+        too when ``ingested`` (a file whose data was committed in this run)."""
+        return self.insert_row(
+            "source_file",
+            {
+                "folder_root": folder_root,
+                "rel_path": rel_path,
+                "content_sha256": content_sha256,
+                "size_bytes": size_bytes,
+                "mtime": mtime,
+                "status": status,
+                "failure_code": failure_code,
+                "last_run_id": run_id,
+                "first_seen_run": run_id,
+                "last_ingested_run": run_id if ingested else None,
+            },
+        )
+
+    def update_source_file(self, source_file_id: int, **fields: object) -> None:
+        self._check_fields("source_file", fields, forbidden=("id", "folder_root", "rel_path", "first_seen_run"))
+        if fields:
+            self.update_row("source_file", "id", source_file_id, fields)
+
+    def get_source_file(self, folder_root: str, rel_path: str) -> SourceFileRow | None:
+        row = self.conn.execute(
+            "SELECT * FROM source_file WHERE folder_root = ? AND rel_path = ?", (folder_root, rel_path)
+        ).fetchone()
+        return None if row is None else _load(SourceFileRow, row)
+
+    def get_source_file_by_id(self, source_file_id: int) -> SourceFileRow | None:
+        row = self.conn.execute("SELECT * FROM source_file WHERE id = ?", (source_file_id,)).fetchone()
+        return None if row is None else _load(SourceFileRow, row)
+
+    def list_source_files(self, folder_root: str | None = None, status: str | None = None) -> list[SourceFileRow]:
+        where: list[str] = []
+        params: list[object] = []
+        if folder_root is not None:
+            where.append("folder_root = ?")
+            params.append(folder_root)
+        if status is not None:
+            where.append("status = ?")
+            params.append(status)
+        sql = "SELECT * FROM source_file" + (" WHERE " + " AND ".join(where) if where else "")
+        rows = self.conn.execute(sql + " ORDER BY folder_root, rel_path", params).fetchall()
+        return [_load(SourceFileRow, r) for r in rows]
+
+    # ----------------------------------------------------------- meeting
+    def insert_meeting(
+        self,
+        source_file_id: int,
+        meeting_date: _dt.date | str | None,
+        date_source: str,
+        title: str | None,
+    ) -> int:
+        return self.insert_row(
+            "meeting",
+            {
+                "source_file_id": source_file_id,
+                "meeting_date": meeting_date,
+                "date_source": date_source,
+                "title": title,
+            },
+        )
+
+    def update_meeting(self, meeting_id: int, **fields: object) -> None:
+        self._check_fields("meeting", fields, forbidden=("id", "source_file_id"))
+        if fields:
+            self.update_row("meeting", "id", meeting_id, fields)
+
+    def get_meeting_for_file(self, source_file_id: int) -> MeetingRow | None:
+        row = self.conn.execute("SELECT * FROM meeting WHERE source_file_id = ?", (source_file_id,)).fetchone()
+        return None if row is None else _load(MeetingRow, row, meeting_date=_date)
+
+    # ----------------------------------------------------------- action_item
+    def insert_action_item(
+        self,
+        *,
+        description: str,
+        task_text: str,
+        description_core_key: str,
+        status: str = "open",
+        completion_origin: str | None = None,
+        completed_at: str | None = None,
+        completion_evidence_source_id: int | None = None,
+        due_raw: str | None = None,
+        due_raw_other: str | None = None,
+        due_date: _dt.date | str | None = None,
+        due_confidence: str = "none",
+        due_rule: str | None = None,
+        due_reason: str | None = None,
+        source_state: str = "present",
+    ) -> int:
+        """Insert an item; the id comes from AUTOINCREMENT (BR-11: never reused, never renumbered);
+        ``created_at`` = ``updated_at`` = the injected clock."""
+        now = self.now_iso()
+        return self.insert_row(
+            "action_item",
+            {
+                "description": description,
+                "task_text": task_text,
+                "description_core_key": description_core_key,
+                "status": status,
+                "completion_origin": completion_origin,
+                "completed_at": completed_at,
+                "completion_evidence_source_id": completion_evidence_source_id,
+                "due_raw": due_raw,
+                "due_raw_other": due_raw_other,
+                "due_date": due_date,
+                "due_confidence": due_confidence,
+                "due_rule": due_rule,
+                "due_reason": due_reason,
+                "source_state": source_state,
+                "created_at": now,
+                "updated_at": now,
+            },
+        )
+
+    def get_action_item(self, item_id: int) -> ActionItemRow | None:
+        row = self.conn.execute("SELECT * FROM action_item WHERE id = ?", (item_id,)).fetchone()
+        return None if row is None else _load(ActionItemRow, row, due_date=_date)
+
+    def list_action_items(self, status: str | None = None) -> list[ActionItemRow]:
+        sql = "SELECT * FROM action_item"
+        params: tuple[object, ...] = ()
+        if status is not None:
+            sql += " WHERE status = ?"
+            params = (status,)
+        rows = self.conn.execute(sql + " ORDER BY id", params).fetchall()
+        return [_load(ActionItemRow, r, due_date=_date) for r in rows]
+
+    # ----------------------------------------------------------- item_owner / item_source_owner
+    def list_item_owners(self, item_id: int) -> list[ItemOwnerRow]:
+        rows = self.conn.execute(
+            "SELECT * FROM item_owner WHERE item_id = ? ORDER BY ordinal", (item_id,)
+        ).fetchall()
+        return [_load(ItemOwnerRow, r, candidates=lambda v: tuple(json.loads(v))) for r in rows]
+
+    @staticmethod
+    def _item_owner_tuples(rows: Sequence[ItemOwnerRow]) -> list[tuple[object, ...]]:
+        return [
+            (r.owner_raw, r.role, r.person_id, r.owner_status, tuple(sorted(r.candidates)), r.provenance)
+            for r in rows
+        ]
+
+    def set_item_owners(self, item_id: int, owners: Sequence[object]) -> bool:
+        """Make the item's ``item_owner`` rows equal ``owners`` (``ResolvedOwner``-shaped objects, ordinal
+        = position). Returns True and sets ``updated_at`` only when the stored rows actually differ
+        (owner is a business field, BR-15); an identical list writes nothing."""
+        new = [_owner_tuple(o) for o in owners]
+        if new == self._item_owner_tuples(self.list_item_owners(item_id)):
+            return False
+        self.conn.execute("DELETE FROM item_owner WHERE item_id = ?", (item_id,))
+        for ordinal, o in enumerate(owners):
+            raw, role, person_id, status, candidates, provenance = _owner_tuple(o)
+            self.insert_row(
+                "item_owner",
+                {
+                    "item_id": item_id,
+                    "ordinal": ordinal,
+                    "owner_raw": raw,
+                    "role": role,
+                    "person_id": person_id,
+                    "owner_status": status,
+                    "candidates": canonical_json(list(candidates)),
+                    "provenance": provenance,
+                },
+            )
+        self.conn.execute("UPDATE action_item SET updated_at = ? WHERE id = ?", (self.now_iso(), item_id))
+        return True
+
+    def list_source_owners(self, item_source_id: int) -> list[ItemSourceOwnerRow]:
+        rows = self.conn.execute(
+            "SELECT * FROM item_source_owner WHERE item_source_id = ? ORDER BY ordinal", (item_source_id,)
+        ).fetchall()
+        return [_load(ItemSourceOwnerRow, r) for r in rows]
+
+    def list_all_source_owners(self) -> list[ItemSourceOwnerRow]:
+        """Every per-source owner phrase of the whole database (re-resolution input, 10.7.9)."""
+        rows = self.conn.execute("SELECT * FROM item_source_owner ORDER BY item_source_id, ordinal").fetchall()
+        return [_load(ItemSourceOwnerRow, r) for r in rows]
+
+    def set_source_owners(self, item_source_id: int, owners: Sequence[object]) -> bool:
+        """Make the source's owner-phrase child rows equal ``owners``. True when something changed."""
+
+        def key(t: tuple[object, ...]) -> tuple[object, ...]:  # (raw, role, person, status, provenance)
+            return (t[0], t[1], t[2], t[3], t[5])
+
+        new = [key(_owner_tuple(o)) for o in owners]
+        old = [
+            (r.owner_raw, r.role, r.person_id, r.owner_status, r.provenance)
+            for r in self.list_source_owners(item_source_id)
+        ]
+        if new == old:
+            return False
+        self.conn.execute("DELETE FROM item_source_owner WHERE item_source_id = ?", (item_source_id,))
+        for ordinal, o in enumerate(owners):
+            raw, role, person_id, status, _cands, provenance = _owner_tuple(o)
+            self.insert_row(
+                "item_source_owner",
+                {
+                    "item_source_id": item_source_id,
+                    "ordinal": ordinal,
+                    "owner_raw": raw,
+                    "role": role,
+                    "person_id": person_id,
+                    "owner_status": status,
+                    "provenance": provenance,
+                },
+            )
+        return True
+
+    # ----------------------------------------------------------- item_source
+    def insert_item_source(
+        self,
+        *,
+        item_id: int,
+        source_file_id: int,
+        meeting_id: int | None,
+        line_start: int,
+        line_end: int,
+        raw_text: str,
+        checkbox_state: str,
+        block_hash: str,
+        section_heading: str | None = None,
+        occurrence_index: int = 0,
+        present: bool = True,
+        run_id: int | None = None,
+        description: str | None = None,
+        task_text: str | None = None,
+        core_key: str | None = None,
+        due_raw: str | None = None,
+        due_raw_other: str | None = None,
+        due_date: _dt.date | str | None = None,
+        due_confidence: str = "none",
+        due_rule: str | None = None,
+        due_reason: str | None = None,
+    ) -> int:
+        """New ``item_source``; ``raw_text`` is stored verbatim (G-22); first/last seen run = ``run_id``."""
+        return self.insert_row(
+            "item_source",
+            {
+                "item_id": item_id,
+                "source_file_id": source_file_id,
+                "meeting_id": meeting_id,
+                "line_start": line_start,
+                "line_end": line_end,
+                "raw_text": raw_text,
+                "section_heading": section_heading,
+                "checkbox_state": checkbox_state,
+                "occurrence_index": occurrence_index,
+                "block_hash": block_hash,
+                "present": present,
+                "first_seen_run": run_id,
+                "last_seen_run": run_id,
+                "description": description,
+                "task_text": task_text,
+                "core_key": core_key,
+                "due_raw": due_raw,
+                "due_raw_other": due_raw_other,
+                "due_date": due_date,
+                "due_confidence": due_confidence,
+                "due_rule": due_rule,
+                "due_reason": due_reason,
+            },
+        )
+
+    def update_item_source(self, item_source_id: int, **fields: object) -> None:
+        self._check_fields("item_source", fields, forbidden=("id", "item_id", "first_seen_run"))
+        if fields:
+            self.update_row("item_source", "id", item_source_id, fields)
+
+    @staticmethod
+    def _source_row(row: sqlite3.Row) -> ItemSourceRow:
+        return _load(ItemSourceRow, row, present=bool, due_date=_date)
+
+    def get_item_source(self, item_source_id: int) -> ItemSourceRow | None:
+        row = self.conn.execute("SELECT * FROM item_source WHERE id = ?", (item_source_id,)).fetchone()
+        return None if row is None else self._source_row(row)
+
+    def list_item_sources(
+        self, item_id: int | None = None, source_file_id: int | None = None, present: bool | None = None
+    ) -> list[ItemSourceRow]:
+        where: list[str] = []
+        params: list[object] = []
+        if item_id is not None:
+            where.append("item_id = ?")
+            params.append(item_id)
+        if source_file_id is not None:
+            where.append("source_file_id = ?")
+            params.append(source_file_id)
+        if present is not None:
+            where.append("present = ?")
+            params.append(int(present))
+        sql = "SELECT * FROM item_source" + (" WHERE " + " AND ".join(where) if where else "")
+        return [self._source_row(r) for r in self.conn.execute(sql + " ORDER BY id", params).fetchall()]
+
+    # ----------------------------------------------------------- item_link (never deleted)
+    def insert_link(
+        self, from_id: int, to_id: int, kind: str, reason: str | None = None, run_id: int | None = None
+    ) -> bool:
+        """Insert a link once (``INSERT OR IGNORE`` on ``(from, to, kind)``); True if a row was added.
+
+        ``possible_duplicate`` is symmetric: stored once with ``from < to`` whichever order is given
+        (spec 7.2) and it needs a ``reason``. ``completed_by`` is directional (from = item whose completion
+        was inferred, to = evidence holder) and is never reordered. Arguments are validated here because
+        ``OR IGNORE`` would otherwise swallow a CHECK violation silently."""
+        if kind not in LINK_KINDS:
+            raise InternalError(f"unknown link kind {kind!r}")
+        if from_id == to_id:
+            raise InternalError("an item cannot be linked to itself")
+        if reason is not None and reason not in LINK_REASONS:
+            raise InternalError(f"unknown link reason {reason!r}")
+        if kind == "possible_duplicate":
+            if reason is None:
+                raise InternalError("a possible_duplicate link needs a reason")
+            from_id, to_id = min(from_id, to_id), max(from_id, to_id)
+        cur = self.conn.execute(
+            "INSERT OR IGNORE INTO item_link (from_item_id, to_item_id, kind, reason, created_run) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (from_id, to_id, kind, reason, run_id),
+        )
+        return cur.rowcount == 1
+
+    def links_of(self, item_id: int) -> list[ItemLinkRow]:
+        """Links touching the item at either end (``D?`` appears on both items)."""
+        rows = self.conn.execute(
+            "SELECT * FROM item_link WHERE from_item_id = ? OR to_item_id = ? "
+            "ORDER BY kind, from_item_id, to_item_id",
+            (item_id, item_id),
+        ).fetchall()
+        return [_load(ItemLinkRow, r) for r in rows]
+
+    def list_links(self, kind: str | None = None) -> list[ItemLinkRow]:
+        sql = "SELECT * FROM item_link"
+        params: tuple[object, ...] = ()
+        if kind is not None:
+            sql += " WHERE kind = ?"
+            params = (kind,)
+        rows = self.conn.execute(sql + " ORDER BY kind, from_item_id, to_item_id", params).fetchall()
+        return [_load(ItemLinkRow, r) for r in rows]
+
+    # ----------------------------------------------------------- item_event (T-M5-02)
+    def record_event(
+        self,
+        item_id: int,
+        kind: str,
+        before: object,
+        after: object,
+        run_id: int | None,
+        ts: str | None = None,
+    ) -> int | None:
+        """Append one ``item_event``; ``before`` / ``after`` are stored as canonical JSON (None => NULL).
+
+        ``ts`` defaults to the injected clock. Idempotent per ``(item_id, kind, run_id, before, after)``:
+        a retried file after a crash cannot double-log (returns None when the event already exists). The
+        de-duplication applies only when ``run_id`` is not None (an out-of-run event such as a manual
+        ``done`` is never dropped)."""
+        if kind not in EVENT_KINDS:
+            raise InternalError(f"unknown event kind {kind!r}")
+        before_json = None if before is None else to_storage_text(canonical_json(before))
+        after_json = None if after is None else to_storage_text(canonical_json(after))
+        if run_id is not None and self.conn.execute(
+            'SELECT 1 FROM item_event WHERE item_id = ? AND kind = ? AND run_id = ? '
+            'AND "before" IS ? AND "after" IS ?',
+            (item_id, kind, run_id, before_json, after_json),
+        ).fetchone():
+            return None
+        return self.insert_row(
+            "item_event",
+            {
+                "item_id": item_id,
+                "ts": ts or self.now_iso(),
+                "kind": kind,
+                "before": before_json,
+                "after": after_json,
+                "run_id": run_id,
+            },
+        )
+
+    def list_events(self, item_id: int | None = None, run_id: int | None = None) -> list[ItemEventRow]:
+        where: list[str] = []
+        params: list[object] = []
+        if item_id is not None:
+            where.append("item_id = ?")
+            params.append(item_id)
+        if run_id is not None:
+            where.append("run_id = ?")
+            params.append(run_id)
+        sql = 'SELECT id, item_id, ts, kind, "before", "after", run_id FROM item_event'
+        if where:
+            sql += " WHERE " + " AND ".join(where)
+        rows = self.conn.execute(sql + " ORDER BY id", params).fetchall()
+        return [_load(ItemEventRow, r, before=json.loads, after=json.loads) for r in rows]
+
+    # ----------------------------------------------------------- touch_item (T-M5-02)
+    def touch_item(
+        self,
+        item_id: int,
+        changes: dict[str, object] | None = None,
+        *,
+        owners: Sequence[object] | None = None,
+        event_kind: str | None = None,
+        run_id: int | None = None,
+    ) -> dict[str, tuple[object, object]]:
+        """The ONLY writer of ``action_item`` business columns after insert (``BUSINESS_COLUMNS``).
+
+        ``changes`` maps column -> new value; ``owners`` (optional) is the complete new owner list. Values
+        are compared after storage normalisation (NFC, dates as ISO text); columns whose value is equal are
+        skipped. If nothing differs: no UPDATE, ``updated_at`` untouched, no event, returns ``{}`` (a no-op
+        re-ingest leaves rows byte-identical, BR-15, AC-08.1). Otherwise one UPDATE sets the changed columns
+        plus ``updated_at`` = the injected clock, and when ``event_kind`` is given exactly one event with
+        ``before`` / ``after`` holding only the changed fields (owners under ``"owners"``) is recorded.
+        Returns ``{field: (before, after)}`` of what changed (owner entries are lists of tuples)."""
+        row = self.conn.execute("SELECT * FROM action_item WHERE id = ?", (item_id,)).fetchone()
+        if row is None:
+            raise InternalError(f"unknown action item {item_id}")
+        diff: dict[str, tuple[object, object]] = {}
+        for column, value in (changes or {}).items():
+            if column not in BUSINESS_COLUMNS:
+                raise InternalError(f"{column!r} is not a business column of action_item")
+            if isinstance(value, _dt.datetime | _dt.date):
+                value = value.isoformat()
+            elif isinstance(value, str):
+                value = to_storage_text(value)
+            if row[column] != value:
+                diff[column] = (row[column], value)
+        write = {c: new for c, (_old, new) in diff.items()}
+        if write:
+            self.update_row("action_item", "id", item_id, {**write, "updated_at": self.now_iso()})
+        if owners is not None:
+            before_owners = self._item_owner_tuples(self.list_item_owners(item_id))
+            if self.set_item_owners(item_id, owners):  # bumps updated_at itself
+                diff["owners"] = (before_owners, self._item_owner_tuples(self.list_item_owners(item_id)))
+        if diff and event_kind is not None:
+            self.record_event(
+                item_id,
+                event_kind,
+                {c: old for c, (old, _new) in diff.items()},
+                {c: new for c, (_old, new) in diff.items()},
+                run_id,
+            )
+        return diff
+
+    # ----------------------------------------------------------- ingest_warning
+    def add_warning(
+        self, run_id: int, code: str, message: str, *, source_file_id: int | None = None, line: int | None = None
+    ) -> int:
+        return self.insert_row(
+            "ingest_warning",
+            {"run_id": run_id, "source_file_id": source_file_id, "line": line, "code": code, "message": message},
+        )
+
+    def list_warnings(self, run_id: int | None = None, source_file_id: int | None = None) -> list[IngestWarningRow]:
+        where: list[str] = []
+        params: list[object] = []
+        if run_id is not None:
+            where.append("run_id = ?")
+            params.append(run_id)
+        if source_file_id is not None:
+            where.append("source_file_id = ?")
+            params.append(source_file_id)
+        sql = "SELECT * FROM ingest_warning" + (" WHERE " + " AND ".join(where) if where else "")
+        return [_load(IngestWarningRow, r) for r in self.conn.execute(sql + " ORDER BY id", params).fetchall()]

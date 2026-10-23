@@ -71,3 +71,27 @@ def is_not_a_name_word(text: str | None) -> bool:
 
 def is_honorific(text: str | None) -> bool:
     return bool(text) and text.strip().rstrip(".").casefold() in HONORIFICS  # type: ignore[union-attr]
+
+
+# --------------------------------------------------------------------------- description core (10.6)
+# Stop-words removed from the *comparison tokens only* (spec 10.6).
+CORE_STOP_WORDS: frozenset[str] = frozenset({"the", "a", "an", "to", "and", "of", "for", "please"})
+
+# A core containing one of these is never auto-merged (Tier-1 condition 2; AC-07.7).
+RECURRENCE_WORDS: frozenset[str] = frozenset(
+    {"weekly", "daily", "monthly", "every", "each", "recurring", "standing", "regular"}
+)
+
+# Tier-1 needs a core of at least this many tokens (10.6 condition 2).
+MIN_CORE_TOKENS = 3
+
+# Default token-set Jaccard threshold for the `fuzzy` possible-duplicate reason (10.6; config overrides).
+FUZZY_JACCARD_THRESHOLD = 0.85
+
+# Comparison-form character folds (8.3): curly quotes / dashes / ellipsis to ASCII.
+CORE_CHAR_FOLDS: dict[int, str] = {
+    0x2018: "'", 0x2019: "'", 0x201A: "'", 0x201B: "'", 0x2032: "'", 0x02BC: "'",
+    0x201C: '"', 0x201D: '"', 0x201E: '"', 0x201F: '"', 0x2033: '"',
+    0x2010: "-", 0x2011: "-", 0x2012: "-", 0x2013: "-", 0x2014: "-", 0x2015: "-", 0x2212: "-",
+    0x2026: "...",
+}  # fmt: skip
