@@ -40,6 +40,7 @@ Public API
   lookups used by the resolver: ``lookup_identity``, ``lookup_alias``, ``lookup_first_name``,
   ``lookup_initial``, ``lookup_non_full``
   ``snapshot() -> RegistrySnapshot`` / ``restore(snapshot)`` / ``copy()`` / ``==``
+``known_name_predicate(registry) -> (raw) -> bool``   parser hook ``is_known_name`` (T-M5-07)
 
 Person kinds: a *full* person has ``last_name`` (First+Last identity); a *non-full* person
 (``last_name is None``) is a single-token or initial-form attendee/provisional person keyed by
@@ -674,3 +675,39 @@ def resolve_person_query(query: str, registry: PeopleRegistry) -> Person:
     if len(key.split()) == 1 and (p := _choose(text, registry.lookup_first_name(key), registry)) is not None:
         return p
     raise PersonNotFound(text, _near_matches(key, registry))
+
+
+# ====================================================================================== T-M5-07
+# Parser hook: ``is_known_name`` for ``parsing.owner_phrase.OwnerAnalyzer`` (spec 10.1 rule 1,
+# 10.3). The registry has no ``is_known`` method; this predicate is built from its lookups.
+
+
+def known_name_predicate(registry: PeopleRegistry) -> Any:
+    """Return ``is_known_name(raw) -> bool``: True when ``raw`` matches a known person by any
+    spec 10.3 route (roster alias, full identity, first name + initial, bare first name), on the
+    plain keys or on the diacritic-folded keys (step 4). Evaluated lazily against the registry
+    object, so it sees every person added before the call. Provisional (``note_owner``) people
+    count as known (they are in K)."""
+    from actiontrack.domain.models import NameFormKind
+    from actiontrack.domain.names import classify_name, identity_key
+
+    def known(raw: str) -> bool:
+        form = classify_name(raw)
+        if form is None:
+            return False
+        for fold in (False, True):
+            fk = fold_key if fold else (lambda t: t)
+            if registry.lookup_alias(fold_key(raw) if fold else name_key(raw), fold=fold):
+                return True
+            if form.kind is NameFormKind.FULL:
+                base = identity_key(raw)
+                if base and registry.lookup_identity(fk(base), fold=fold):
+                    return True
+            elif form.kind is NameFormKind.FIRST_INITIAL:
+                if registry.lookup_initial(fk(form.first), fk(form.initial or ""), fold=fold):
+                    return True
+            elif registry.lookup_first_name(fk(form.first), fold=fold):
+                return True
+        return False
+
+    return known

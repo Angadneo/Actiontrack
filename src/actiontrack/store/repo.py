@@ -32,7 +32,7 @@ Public API
     People (T-M4-07; ``person_alias.auto`` was added to migration 0001 + schema.sql, the product is
     pre-release so no 0002 migration is needed; ``tests/unit/test_schema.py`` lists the column):
     ``upsert_person(person) -> "inserted"|"updated"|"unchanged"``
-    ``upsert_alias(person_id, alias, alias_key, auto=False)``
+    ``upsert_alias(person_id, alias, alias_key, auto=False)``  (no statement at all when the row is identical)
     ``persist_registry(registry) -> {"inserted", "updated", "aliases"}``  DB rows := registry
     ``upsert_roster(registry, roster) -> tuple[Person, ...]``  start of every non-dry ingest
     ``load_registry(roster=None) -> PeopleRegistry``  rebuild K from DB rows (+ current roster)
@@ -45,7 +45,9 @@ no method commits and none deletes an ``item_source`` or ``item_link`` row, BR-0
                          (``Repo(db, clock=None)``: ``clock`` or ``db.clock`` or ``SystemClock``).
     runs:      ``insert_ingest_run(folder_root, *, dry_run=False, started_at=None) -> int``,
                ``update_ingest_run(run_id, **fields)``, ``bump_run_counters(run_id, **deltas)``,
-               ``get_ingest_run(id) -> IngestRunRow | None``, ``list_ingest_runs(status=None)``
+               ``get_ingest_run(id) -> IngestRunRow | None``, ``list_ingest_runs(status=None)``,
+               ``count_files_ingested_in_run(run_id) -> int`` / ``last_ingested_file(run_id) -> str | None``
+               (what an interrupted run had committed, T-M5-04: derived from ``source_file.last_ingested_run``)
     files:     ``insert_source_file(folder_root, rel_path, *, status, ...) -> int``,
                ``update_source_file(id, **fields)``, ``get_source_file(folder_root, rel_path)``,
                ``get_source_file_by_id(id)``, ``list_source_files(folder_root=None, status=None)``
@@ -509,9 +511,11 @@ class Repo:
     def upsert_alias(self, person_id: str, alias: str, alias_key: str, auto: bool = False) -> None:
         """Insert/refresh one ``person_alias`` row (a roster alias is never downgraded to auto)."""
         row = self.conn.execute(
-            "SELECT auto FROM person_alias WHERE person_id = ? AND alias_key = ?",
+            "SELECT alias, auto FROM person_alias WHERE person_id = ? AND alias_key = ?",
             (person_id, to_storage_text(alias_key)),
         ).fetchone()
+        if row is not None and row["alias"] == to_storage_text(alias) and bool(row["auto"]) == bool(auto):
+            return  # identical: no statement (an unchanged re-ingest writes nothing, BR-15)
         if row is None:
             self.insert_row(
                 "person_alias",
@@ -685,6 +689,21 @@ class Repo:
             params = (status,)
         rows = self.conn.execute(sql + " ORDER BY id", params).fetchall()
         return [_load(IngestRunRow, r, dry_run=bool) for r in rows]
+
+    def count_files_ingested_in_run(self, run_id: int) -> int:
+        """Files whose data was committed by this run (``source_file.last_ingested_run``)."""
+        row = self.conn.execute(
+            "SELECT COUNT(*) FROM source_file WHERE last_ingested_run = ?", (run_id,)
+        ).fetchone()
+        return int(row[0])
+
+    def last_ingested_file(self, run_id: int) -> str | None:
+        """Best-effort name of the file this run committed last (highest ``source_file.id``; a file
+        re-ingested under an old id can make this approximate): only used in the interrupted-run notice."""
+        row = self.conn.execute(
+            "SELECT rel_path FROM source_file WHERE last_ingested_run = ? ORDER BY id DESC LIMIT 1", (run_id,)
+        ).fetchone()
+        return None if row is None else row[0]
 
     # ----------------------------------------------------------- source_file
     def insert_source_file(

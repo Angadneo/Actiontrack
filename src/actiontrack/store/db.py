@@ -38,6 +38,8 @@ Public API
                               => ``InternalError``). ``MIGRATIONS_DIR`` is the bundled folder.
 ``split_sql(text) -> list[str]``  safe statement splitter (``sqlite3.complete_statement``).
 ``map_sqlite_error(exc, path) -> EnvError``  sqlite3 error -> exit-4 error naming the path.
+``DbLocked(EnvError)``       typed exit-4 error for SQLite "database is locked/busy" after the busy timeout
+                              (T-M5-04); ``map_sqlite_error`` returns it for that case. Still an ``EnvError``.
 ``BUSY_TIMEOUT_MS = 2000``   fixed, not a config key.
 
 Journal-mode decision (plan 2.2, measured on Windows 10, Python 3.12.10, SQLite 3.49): DELETE with
@@ -87,12 +89,16 @@ _MIGRATION_RE = re.compile(r"^(\d{4})_([A-Za-z0-9_\-]+)\.sql$")
 
 
 # ------------------------------------------------------------------ errors
+class DbLocked(EnvError):
+    """SQLite stayed locked/busy beyond ``BUSY_TIMEOUT_MS`` (exit 4; T-M5-04). An ``EnvError`` subclass."""
+
+
 def map_sqlite_error(exc: BaseException, path: str | os.PathLike[str] | None = None) -> EnvError:
     """Translate a sqlite3 error into an exit-4 ``EnvError`` that names the database path."""
     where = str(path) if path is not None else None
     msg = str(exc).lower()
     if "locked" in msg or "busy" in msg:
-        return EnvError(
+        return DbLocked(
             "database is locked by another actiontrack process",
             where=where,
             next_step="wait for the other command to finish, then retry",
