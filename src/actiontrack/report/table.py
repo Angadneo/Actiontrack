@@ -22,6 +22,7 @@ Public API
     Every cell goes through ``sanitize.clean_text`` (SEC-08).
     Display width: East Asian W/F = 2 columns; combining marks / format characters = 0.
 ``display_width(s) -> int``
+``truncate(s, width) -> str``      display-width aware cut ending in ``...`` (ingest report rows)
 ``LIST_COLUMNS``                 the ``list`` columns ID STATUS DUE OWNER TASK SOURCE FLAGS (spec 4.3).
 ``fmt_due(due, raw, unresolved)``  ``2026-10-23`` | ``?(next wk)`` | ``-``  (spec 9.5)
 ``fmt_flags(flags)``             fixed order ``CR D? OA OU DU SM CI`` (spec 6.4)
@@ -74,6 +75,12 @@ def _truncate(s: str, width: int) -> str:
         out.append(ch)
         used += w
     return "".join(out) + ELLIPSIS
+
+
+def truncate(s: str, width: int) -> str:
+    """Public form of the cell truncation: ``s`` itself when it fits ``width`` display columns, else a prefix
+    ending in ``...`` (used by the ingest report's free-text rows, T-M5-16)."""
+    return _truncate(s, width)
 
 
 def _pad(s: str, width: int, align: str) -> str:

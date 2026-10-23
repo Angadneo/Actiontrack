@@ -1,0 +1,18 @@
+Ingest run #<run>  folder=<folder>  as-of 2026-10-22
+Files: discovered 34 | ingested 31 | unchanged 0 | empty 1 | failed 2
+Items: new 58 | updated 0 | unchanged 0 | merged-duplicates 6 | possible-duplicates 4 | already-done-in-note 9
+(Files and Items count this run only; the lists below show OPEN items in the current database.)
+resolved via attendance: 3 (current state, all items)
+Unresolved owners (2):
+  AT-0004  notes/2026-10-07-sprint.md:18  no owner found: "- [ ] Send revised quote by Friday"
+  AT-0011  notes/2026-10-09-sync.md:22    ambiguous: "Priya" -> Priya Nair | Priya Shah
+Missing/unresolved due dates (2):
+  AT-0006  notes/2026-10-07-sprint.md:20  no date
+  AT-0013  notes/2026-10-09-sync.md:30    unresolved "next week" (vague)
+Possible duplicates (1):
+  AT-0021 ~ AT-0008  same task+owner, due differs (2026-10-23 vs 2026-10-16)
+Parsing failures (2):
+  notes/2026-09-30-board.md  E-ENCODING  not valid UTF-8 at byte 1042; skipped
+  notes/old-binary.md        E-BINARY    contains NUL bytes; skipped
+Warnings (2): see --verbose
+Exit code 5 (2 files failed)

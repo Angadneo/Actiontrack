@@ -58,9 +58,10 @@ def test_exit_0_gmail_login_handoff_noop(tmp_workdir):
     assert list(tmp_workdir.iterdir()) == []
 
 
-@pytest.mark.parametrize("command", ["ingest", "list", "done", "followup"])
+# M5 (T-M5-18): ``ingest`` is a real command now; only list / done / followup are still dispatch stubs.
+@pytest.mark.parametrize("command", ["list", "done", "followup"])
 def test_exit_1_stub_commands(tmp_workdir, command):
-    args = {"ingest": ["ingest", "n"], "list": ["list"], "done": ["done", "1"], "followup": ["followup", "A B"]}
+    args = {"list": ["list"], "done": ["done", "1"], "followup": ["followup", "A B"]}
     r = at(*args[command], cwd=tmp_workdir)
     assert r.returncode == 1
     assert r.stdout == b""

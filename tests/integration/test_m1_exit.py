@@ -299,7 +299,9 @@ def test_usage_errors_exit2_stderr_only(work, argv, rc):
     assert list(work.iterdir()) == []
 
 
-@pytest.mark.parametrize("command", ["ingest", "list", "done", "followup"])
+# M5 (T-M5-18): ``ingest`` is a real command now (see tests/integration/test_ingest_exit_codes.py); the others
+# are still dispatch stubs.
+@pytest.mark.parametrize("command", ["list", "done", "followup"])
 def test_stub_commands_exit1_clean_message_and_touch_nothing(work, command):
     db = work / "sub" / "actiontrack.db"  # a --db whose folder does not exist: stubs must not create it
     argv = [*VALID_ARGV[command], "--config", str(ROSTER), "--today", TODAY, "--db", str(db)]
@@ -522,7 +524,8 @@ def test_sample_folders_unchanged_by_cli_runs(work):
     for t in trees:
         run_cli(work, "ingest", str(t), "--config", str(ROSTER), "--today", TODAY, "--db", str(work / "x.db"))
     assert [snapshot_tree(t) for t in trees] == before
-    assert list(work.iterdir()) == []
+    # M5: ``ingest`` is real, so the database (and its lock file) are the only things it may leave behind
+    assert {p.name for p in work.iterdir()} <= {"x.db", "x.db.lock"}
 
 
 @pytest.mark.ac("AC-09.8")

@@ -64,7 +64,8 @@ def test_all_five_commands_registered():
     assert tuple(COMMANDS) == cli.COMMANDS
 
 
-@pytest.mark.parametrize("command", RESULT_COMMANDS)
+# M5 (T-M5-18): ``ingest`` has a real handler now; the others are still stubs.
+@pytest.mark.parametrize("command", [c for c in RESULT_COMMANDS if c != "ingest"])
 def test_stub_handlers_exit_1(capsys, tmp_workdir, command):
     rc, out, err = run(capsys, *MINIMAL[command])
     assert rc == int(ExitCode.INTERNAL_ERROR)

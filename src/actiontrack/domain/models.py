@@ -467,3 +467,166 @@ class AmbiguousRecord:
     location: str | None
     raw: str | None
     candidate_names: tuple[str, ...]
+
+
+# ---------------------------------------------------------------------------------------------
+# Ingest report model (T-M5-15; spec 4.2 "Report definitions", FR-01.7, AC-01.7, G-25)
+#
+# Pure data. Built by ``services.ingest.build_ingest_report`` (from the run row, the run counters, the file
+# outcomes and the CURRENT database state); rendered by ``report.ingest_report`` (table / JSON). Nothing here
+# is truncated or sanitised: that is the renderers' job (SEC-08). Two scopes, never mixed:
+#
+#   RUN-SCOPED   ``files`` (discovered = ingested + unchanged + empty + failed), ``items`` (every source parsed
+#                from an INGESTED file is classified exactly once as new / merged-duplicates / updated /
+#                unchanged, so new + merged + updated + unchanged = sources imported; ``possible_duplicates`` =
+#                ``possible_duplicate`` links created this run; ``already_done_in_note`` = ``[x]`` sources
+#                imported this run, orthogonal), ``failures``, ``warnings``, ``reresolution``, ``notices``.
+#   STATE-SCOPED ``unresolved_owners``, ``missing_due_dates``, ``possible_duplicate_pairs`` (OPEN items only,
+#                all folder roots, equal to what ``list`` shows; a pair is listed when at least one of its two
+#                items is open) and ``resolved_via_attendance`` (owner rows with provenance
+#                ``attendee_in_meeting`` over the whole database).
+#
+# Row ordering is deterministic everywhere: sections by item id (owner rows by ordinal, pairs by
+# (earlier id, later id)), failures and warnings by (path, line, code, message).
+# ---------------------------------------------------------------------------------------------
+@dataclasses.dataclass(frozen=True, slots=True)
+class ReportFileCounts:
+    """Files line (run-scoped) plus two notices that are not part of the partition."""
+
+    discovered: int = 0
+    ingested: int = 0
+    unchanged: int = 0
+    empty: int = 0
+    failed: int = 0
+    #: stored files of this folder not found by this scan (marked ``missing`` this run)
+    missing: int = 0
+    #: ``W-SYMLINK-SKIPPED`` count of this run
+    symlinks_skipped: int = 0
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ReportItemCounts:
+    """Items line (run-scoped)."""
+
+    new: int = 0
+    updated: int = 0
+    unchanged: int = 0
+    merged_duplicates: int = 0
+    possible_duplicates: int = 0
+    already_done_in_note: int = 0
+
+    @property
+    def sources_imported(self) -> int:
+        return self.new + self.updated + self.unchanged + self.merged_duplicates
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class OwnerIssueRow:
+    """One unresolved owner of an OPEN item. ``kind``: ``ambiguous`` | ``unassigned`` | ``unverified``
+    (provisional). ``raw`` is the untruncated source line; ``candidates`` are full names (ambiguous only)."""
+
+    item_id: int
+    location: str | None
+    extra_sources: int
+    kind: str
+    owner_raw: str | None
+    raw: str
+    candidates: tuple[str, ...] = ()
+    notes: tuple[str, ...] = ()
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class DueIssueRow:
+    """An OPEN item without a usable due date. ``kind``: ``no_date`` | ``unresolved`` (``due_raw`` + ``reason``)."""
+
+    item_id: int
+    location: str | None
+    extra_sources: int
+    kind: str
+    raw: str
+    due_raw: str | None = None
+    reason: str | None = None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class DuplicatePairRow:
+    """A ``possible_duplicate`` link: ``item_id`` is the LATER id, ``other_item_id`` the earlier one."""
+
+    item_id: int
+    other_item_id: int
+    reason: str
+    reason_text: str
+    due: str
+    other_due: str
+    task_text: str = ""
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class FailureRow:
+    """A file with an ``E-*`` code this run (``message`` without the leading ``<path>: `` and without the
+    "Next:" part, which is ``next_step``)."""
+
+    path: str
+    code: str
+    message: str
+    next_step: str | None = None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class WarningRow:
+    """One ``ingest_warning`` row of this run. ``notes`` carries the H-05 text (AC-05.19) when it applies."""
+
+    code: str
+    path: str | None
+    line: int | None
+    message: str
+    notes: tuple[str, ...] = ()
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class OwnerReResolutionRow:
+    """One owner row changed by the whole-database re-resolution of this run (10.3 step 6)."""
+
+    item_id: int
+    location: str | None
+    owner_raw: str | None
+    kind: str
+    old_status: str
+    new_status: str
+    candidates: tuple[str, ...] = ()
+    notes: tuple[str, ...] = ()
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class IngestReport:
+    """The whole ingest report (see the block comment above for scopes). ``exit_code`` / ``exit_reason`` are the
+    values the command exits with; ``status`` is ``complete`` | ``partial`` | ``interrupted`` (10.7.6)."""
+
+    run_id: int
+    status: str
+    dry_run: bool
+    folder: str
+    recursive: bool
+    as_of: _dt.date
+    timezone: str
+    started_at: str
+    finished_at: str | None
+    files: ReportFileCounts
+    items: ReportItemCounts
+    resolved_via_attendance: int
+    unresolved_owners: tuple[OwnerIssueRow, ...]
+    missing_due_dates: tuple[DueIssueRow, ...]
+    possible_duplicate_pairs: tuple[DuplicatePairRow, ...]
+    failures: tuple[FailureRow, ...]
+    warnings: tuple[WarningRow, ...]
+    reresolution: tuple[OwnerReResolutionRow, ...] = ()
+    notices: tuple[str, ...] = ()
+    hint: str | None = None
+    finalisation_error: str | None = None
+    exit_code: int = 0
+    exit_reason: str | None = None
+
+    @property
+    def warning_count(self) -> int:
+        """Number of warnings of this run (file failures are in ``failures``, not counted here)."""
+        return len(self.warnings)

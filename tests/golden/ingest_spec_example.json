@@ -1,0 +1,174 @@
+{
+  "as_of": "2026-10-22",
+  "timezone": "Asia/Kolkata",
+  "run": {
+    "id": "<run>",
+    "status": "partial",
+    "dry_run": false,
+    "folder": "<folder>",
+    "recursive": true,
+    "started_at": "<timestamp>",
+    "finished_at": "<timestamp>"
+  },
+  "notices": [],
+  "hint": null,
+  "files": {
+    "scope": "run",
+    "discovered": 34,
+    "ingested": 31,
+    "unchanged": 0,
+    "empty": 1,
+    "failed": 2,
+    "missing": 0,
+    "symlinks_skipped": 0
+  },
+  "items": {
+    "scope": "run",
+    "new": 58,
+    "updated": 0,
+    "unchanged": 0,
+    "merged_duplicates": 6,
+    "possible_duplicates": 4,
+    "already_done_in_note": 9,
+    "sources_imported": 64
+  },
+  "resolved_via_attendance": {
+    "scope": "state",
+    "count": 3
+  },
+  "unresolved_owners": {
+    "scope": "state",
+    "count": 2,
+    "ambiguous": 1,
+    "unassigned": 1,
+    "unverified": 0,
+    "rows": [
+      {
+        "item_id": 4,
+        "id": "AT-0004",
+        "location": "notes/2026-10-07-sprint.md:18",
+        "additional_sources": 0,
+        "kind": "unassigned",
+        "owner_raw": null,
+        "candidates": [],
+        "raw": "- [ ] Send revised quote by Friday",
+        "notes": []
+      },
+      {
+        "item_id": 11,
+        "id": "AT-0011",
+        "location": "notes/2026-10-09-sync.md:22",
+        "additional_sources": 0,
+        "kind": "ambiguous",
+        "owner_raw": "Priya",
+        "candidates": [
+          "Priya Nair",
+          "Priya Shah"
+        ],
+        "raw": "- [ ] Priya to draft the memo",
+        "notes": []
+      }
+    ]
+  },
+  "missing_due_dates": {
+    "scope": "state",
+    "count": 2,
+    "no_date": 1,
+    "unresolved": 1,
+    "rows": [
+      {
+        "item_id": 6,
+        "id": "AT-0006",
+        "location": "notes/2026-10-07-sprint.md:20",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Sam to tidy the wiki"
+      },
+      {
+        "item_id": 13,
+        "id": "AT-0013",
+        "location": "notes/2026-10-09-sync.md:30",
+        "additional_sources": 0,
+        "kind": "unresolved",
+        "due_raw": "next week",
+        "reason": "vague",
+        "raw": "- [ ] Karan to plan next week"
+      }
+    ]
+  },
+  "possible_duplicates": {
+    "scope": "state",
+    "count": 1,
+    "rows": [
+      {
+        "item_id": 21,
+        "id": "AT-0021",
+        "other_item_id": 8,
+        "other_id": "AT-0008",
+        "reason": "due_differs",
+        "reason_text": "same task+owner, due differs (2026-10-23 vs 2026-10-16)",
+        "due": "2026-10-23",
+        "other_due": "2026-10-16",
+        "task_text": "Send the revised quote"
+      }
+    ]
+  },
+  "parsing_failures": {
+    "scope": "run",
+    "count": 2,
+    "rows": [
+      {
+        "path": "notes/2026-09-30-board.md",
+        "code": "E-ENCODING",
+        "message": "not valid UTF-8 at byte 1042; skipped",
+        "next_step": "re-save as UTF-8"
+      },
+      {
+        "path": "notes/old-binary.md",
+        "code": "E-BINARY",
+        "message": "contains NUL bytes; skipped",
+        "next_step": null
+      }
+    ]
+  },
+  "warnings": {
+    "scope": "run",
+    "count": 2,
+    "by_code": [
+      {
+        "code": "W-MEETING-DATE-MISSING",
+        "count": 1
+      },
+      {
+        "code": "W-NONCHECKBOX-CANDIDATES",
+        "count": 1
+      }
+    ],
+    "rows": [
+      {
+        "code": "W-MEETING-DATE-MISSING",
+        "path": "notes/untitled.md",
+        "line": null,
+        "message": "notes/untitled.md: no meeting date found",
+        "notes": []
+      },
+      {
+        "code": "W-NONCHECKBOX-CANDIDATES",
+        "path": "notes/x.md",
+        "line": 22,
+        "message": "notes/x.md:22: possible action line is not a checkbox",
+        "notes": []
+      }
+    ]
+  },
+  "owner_reresolution": {
+    "scope": "run",
+    "count": 0,
+    "rows": []
+  },
+  "finalisation_error": null,
+  "exit_code": 5,
+  "exit_reason": "2 files failed"
+}

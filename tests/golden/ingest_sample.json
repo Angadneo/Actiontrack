@@ -1,0 +1,701 @@
+{
+  "as_of": "2026-10-22",
+  "timezone": "UTC",
+  "run": {
+    "id": "<run>",
+    "status": "partial",
+    "dry_run": false,
+    "folder": "<folder>",
+    "recursive": true,
+    "started_at": "<timestamp>",
+    "finished_at": "<timestamp>"
+  },
+  "notices": [],
+  "hint": null,
+  "files": {
+    "scope": "run",
+    "discovered": 35,
+    "ingested": 33,
+    "unchanged": 0,
+    "empty": 1,
+    "failed": 1,
+    "missing": 0,
+    "symlinks_skipped": 0
+  },
+  "items": {
+    "scope": "run",
+    "new": 105,
+    "updated": 0,
+    "unchanged": 0,
+    "merged_duplicates": 12,
+    "possible_duplicates": 11,
+    "already_done_in_note": 13,
+    "sources_imported": 117
+  },
+  "resolved_via_attendance": {
+    "scope": "state",
+    "count": 33
+  },
+  "unresolved_owners": {
+    "scope": "state",
+    "count": 12,
+    "ambiguous": 7,
+    "unassigned": 5,
+    "unverified": 0,
+    "rows": [
+      {
+        "item_id": 19,
+        "id": "AT-0019",
+        "location": "2026-09-10-acme-renewal-prep.md:12",
+        "additional_sources": 0,
+        "kind": "unassigned",
+        "owner_raw": "Someone",
+        "candidates": [],
+        "raw": "- [ ] Someone to update the CRM notes",
+        "notes": []
+      },
+      {
+        "item_id": 29,
+        "id": "AT-0029",
+        "location": "2026-09-17-billing-migration-sync.md:9",
+        "additional_sources": 0,
+        "kind": "ambiguous",
+        "owner_raw": "Priya",
+        "candidates": [
+          "Priya Nair",
+          "Priya Shah"
+        ],
+        "raw": "- [ ] Priya to sign off the cutover checklist by Monday",
+        "notes": []
+      },
+      {
+        "item_id": 35,
+        "id": "AT-0035",
+        "location": "2026-09-18-design-review.md:14",
+        "additional_sources": 0,
+        "kind": "unassigned",
+        "owner_raw": "Everyone",
+        "candidates": [],
+        "raw": "- [ ] Everyone to review the prototype before the next review",
+        "notes": []
+      },
+      {
+        "item_id": 36,
+        "id": "AT-0036",
+        "location": "2026-09-18-design-review.md:15",
+        "additional_sources": 0,
+        "kind": "unassigned",
+        "owner_raw": "TBD",
+        "candidates": [],
+        "raw": "- [ ] TBD to write the design-system changelog",
+        "notes": []
+      },
+      {
+        "item_id": 44,
+        "id": "AT-0044",
+        "location": "2026-09-23-standup.md:8",
+        "additional_sources": 0,
+        "kind": "ambiguous",
+        "owner_raw": "Rahul",
+        "candidates": [
+          "Rahul Mehta",
+          "Rahul Verma"
+        ],
+        "raw": "- [ ] Rahul to rebase the feature branch by Thursday",
+        "notes": []
+      },
+      {
+        "item_id": 63,
+        "id": "AT-0063",
+        "location": "2026-09-30-q4-offsite.md:16",
+        "additional_sources": 0,
+        "kind": "ambiguous",
+        "owner_raw": "Priya",
+        "candidates": [
+          "Priya Nair",
+          "Priya Shah"
+        ],
+        "raw": "- [ ] Priya to own the hiring plan for the two QA roles",
+        "notes": []
+      },
+      {
+        "item_id": 64,
+        "id": "AT-0064",
+        "location": "2026-09-30-q4-offsite.md:17",
+        "additional_sources": 0,
+        "kind": "ambiguous",
+        "owner_raw": "Rahul",
+        "candidates": [
+          "Rahul Mehta",
+          "Rahul Verma"
+        ],
+        "raw": "- [ ] Rahul to prepare the architecture overview by Friday",
+        "notes": []
+      },
+      {
+        "item_id": 65,
+        "id": "AT-0065",
+        "location": "2026-09-30-q4-offsite.md:18",
+        "additional_sources": 0,
+        "kind": "unassigned",
+        "owner_raw": "Everyone",
+        "candidates": [],
+        "raw": "- [ ] Everyone to submit their Q4 goals by 7 Oct",
+        "notes": []
+      },
+      {
+        "item_id": 70,
+        "id": "AT-0070",
+        "location": "2026-10-01-quote-portal-weekly.md:12",
+        "additional_sources": 0,
+        "kind": "unassigned",
+        "owner_raw": "Team",
+        "candidates": [],
+        "raw": "- [ ] Team to decide on the launch date",
+        "notes": []
+      },
+      {
+        "item_id": 81,
+        "id": "AT-0081",
+        "location": "2026-10-07-standup.md:9",
+        "additional_sources": 0,
+        "kind": "ambiguous",
+        "owner_raw": "Rahul",
+        "candidates": [
+          "Rahul Mehta",
+          "Rahul Verma"
+        ],
+        "raw": "- [ ] Rahul to review Anita's PR by tomorrow",
+        "notes": []
+      },
+      {
+        "item_id": 83,
+        "id": "AT-0083",
+        "location": "2026-10-08-billing-go-no-go.md:9",
+        "additional_sources": 0,
+        "kind": "ambiguous",
+        "owner_raw": "Priya",
+        "candidates": [
+          "Priya Nair",
+          "Priya Shah"
+        ],
+        "raw": "- [ ] Priya to circulate the go/no-go summary by EOD",
+        "notes": []
+      },
+      {
+        "item_id": 105,
+        "id": "AT-0105",
+        "location": "untitled.md:2",
+        "additional_sources": 0,
+        "kind": "ambiguous",
+        "owner_raw": "Priya",
+        "candidates": [
+          "Priya Nair",
+          "Priya Shah"
+        ],
+        "raw": "- [ ] Priya to send the slides by Friday",
+        "notes": []
+      }
+    ]
+  },
+  "missing_due_dates": {
+    "scope": "state",
+    "count": 28,
+    "no_date": 24,
+    "unresolved": 4,
+    "rows": [
+      {
+        "item_id": 6,
+        "id": "AT-0006",
+        "location": "2026-09-02-standup.md:10",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Sam to share the VPN guide"
+      },
+      {
+        "item_id": 10,
+        "id": "AT-0010",
+        "location": "2026-09-03-billing-migration-sync.md:12",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Sam to snapshot the production DB before cutover"
+      },
+      {
+        "item_id": 13,
+        "id": "AT-0013",
+        "location": "2026-09-08-quote-portal-weekly.md:11",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Meera to ask Acme for their procurement contact"
+      },
+      {
+        "item_id": 15,
+        "id": "AT-0015",
+        "location": "2026-09-09-qa-standup.md:10",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Priya to set up the test data"
+      },
+      {
+        "item_id": 19,
+        "id": "AT-0019",
+        "location": "2026-09-10-acme-renewal-prep.md:12",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Someone to update the CRM notes"
+      },
+      {
+        "item_id": 22,
+        "id": "AT-0022",
+        "location": "2026-09-14-onboarding-flow-design.md:11",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Rahul to estimate the SSO work"
+      },
+      {
+        "item_id": 26,
+        "id": "AT-0026",
+        "location": "2026-09-15-quote-portal-weekly.md:12",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Rahul to fix the pagination bug"
+      },
+      {
+        "item_id": 31,
+        "id": "AT-0031",
+        "location": "2026-09-17-billing-migration-sync.md:12",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Rahul to review the schema mapping doc"
+      },
+      {
+        "item_id": 35,
+        "id": "AT-0035",
+        "location": "2026-09-18-design-review.md:14",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Everyone to review the prototype before the next review"
+      },
+      {
+        "item_id": 36,
+        "id": "AT-0036",
+        "location": "2026-09-18-design-review.md:15",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] TBD to write the design-system changelog"
+      },
+      {
+        "item_id": 40,
+        "id": "AT-0040",
+        "location": "2026-09-21-incident-review.md:17",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Karan to refund affected customers"
+      },
+      {
+        "item_id": 45,
+        "id": "AT-0045",
+        "location": "2026-09-23-standup.md:9",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Sam to rotate the staging credentials"
+      },
+      {
+        "item_id": 53,
+        "id": "AT-0053",
+        "location": "2026-09-28-acme-renewal-checkin.md:11",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Lena to share the usage report with Meera"
+      },
+      {
+        "item_id": 58,
+        "id": "AT-0058",
+        "location": "2026-09-29-billing-cutover-planning.md:12",
+        "additional_sources": 1,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Karan to freeze invoice edits from 9 Oct"
+      },
+      {
+        "item_id": 62,
+        "id": "AT-0062",
+        "location": "2026-09-30-q4-offsite.md:12",
+        "additional_sources": 0,
+        "kind": "unresolved",
+        "due_raw": "mid-October",
+        "reason": "vague",
+        "raw": "+ [ ] Sam to propose the on-call rotation by mid-October"
+      },
+      {
+        "item_id": 63,
+        "id": "AT-0063",
+        "location": "2026-09-30-q4-offsite.md:16",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Priya to own the hiring plan for the two QA roles"
+      },
+      {
+        "item_id": 70,
+        "id": "AT-0070",
+        "location": "2026-10-01-quote-portal-weekly.md:12",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Team to decide on the launch date"
+      },
+      {
+        "item_id": 76,
+        "id": "AT-0076",
+        "location": "2026-10-05-onboarding-retro.md:12",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Priya to review the welcome email for accessibility"
+      },
+      {
+        "item_id": 79,
+        "id": "AT-0079",
+        "location": "2026-10-06-quote-portal-weekly.md:11",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Sam to set up uptime monitoring"
+      },
+      {
+        "item_id": 82,
+        "id": "AT-0082",
+        "location": "2026-10-07-standup.md:10",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Anita to update the style guide"
+      },
+      {
+        "item_id": 95,
+        "id": "AT-0095",
+        "location": "2026-10-12-billing-post-cutover.md:12",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Rahul to write the migration runbook"
+      },
+      {
+        "item_id": 98,
+        "id": "AT-0098",
+        "location": "2026-10-13-quote-portal-weekly.md:12",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Meera to follow up on the demo"
+      },
+      {
+        "item_id": 100,
+        "id": "AT-0100",
+        "location": "2026-10-14-acme-renewal-wrapup.md:10",
+        "additional_sources": 0,
+        "kind": "unresolved",
+        "due_raw": "November",
+        "reason": "vague",
+        "raw": "- [ ] Lena to schedule the quarterly business review for November"
+      },
+      {
+        "item_id": 101,
+        "id": "AT-0101",
+        "location": "2026-10-14-acme-renewal-wrapup.md:12",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Priya to prepare the renewal one-pager"
+      },
+      {
+        "item_id": 102,
+        "id": "AT-0102",
+        "location": "2026-10-03-sales-pipeline.md:6",
+        "additional_sources": 0,
+        "kind": "unresolved",
+        "due_raw": "Friday",
+        "reason": "no_meeting_date",
+        "raw": "- [ ] Meera to chase Orbit Labs by Friday"
+      },
+      {
+        "item_id": 103,
+        "id": "AT-0103",
+        "location": "2026-10-03-sales-pipeline.md:7",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Lena to clean up duplicate leads"
+      },
+      {
+        "item_id": 104,
+        "id": "AT-0104",
+        "location": "untitled.md:1",
+        "additional_sources": 0,
+        "kind": "no_date",
+        "due_raw": null,
+        "reason": null,
+        "raw": "- [ ] Sam to chase the vendor"
+      },
+      {
+        "item_id": 105,
+        "id": "AT-0105",
+        "location": "untitled.md:2",
+        "additional_sources": 0,
+        "kind": "unresolved",
+        "due_raw": "Friday",
+        "reason": "no_meeting_date",
+        "raw": "- [ ] Priya to send the slides by Friday"
+      }
+    ]
+  },
+  "possible_duplicates": {
+    "scope": "state",
+    "count": 6,
+    "rows": [
+      {
+        "item_id": 31,
+        "id": "AT-0031",
+        "other_item_id": 8,
+        "other_id": "AT-0008",
+        "reason": "due_differs",
+        "reason_text": "same task+owner, due differs (no date vs 2026-09-07)",
+        "due": "no date",
+        "other_due": "2026-09-07",
+        "task_text": "Review the schema mapping doc"
+      },
+      {
+        "item_id": 48,
+        "id": "AT-0048",
+        "other_item_id": 22,
+        "other_id": "AT-0022",
+        "reason": "due_differs",
+        "reason_text": "same task+owner, due differs (2026-09-28 vs no date)",
+        "due": "2026-09-28",
+        "other_due": "no date",
+        "task_text": "Estimate SSO work"
+      },
+      {
+        "item_id": 47,
+        "id": "AT-0047",
+        "other_item_id": 23,
+        "other_id": "AT-0023",
+        "reason": "due_differs",
+        "reason_text": "same task+owner, due differs (2026-10-02 vs 2026-09-30)",
+        "due": "2026-10-02",
+        "other_due": "2026-09-30",
+        "task_text": "Collect 5 customer quotes for the landing page"
+      },
+      {
+        "item_id": 41,
+        "id": "AT-0041",
+        "other_item_id": 24,
+        "other_id": "AT-0024",
+        "reason": "due_differs",
+        "reason_text": "same task+owner, due differs (2026-09-24 vs 2026-09-17)",
+        "due": "2026-09-24",
+        "other_due": "2026-09-17",
+        "task_text": "Share updated wireframes"
+      },
+      {
+        "item_id": 43,
+        "id": "AT-0043",
+        "other_item_id": 26,
+        "other_id": "AT-0026",
+        "reason": "due_differs",
+        "reason_text": "same task+owner, due differs (2026-09-23 vs no date)",
+        "due": "2026-09-23",
+        "other_due": "no date",
+        "task_text": "Fix the pagination bug"
+      },
+      {
+        "item_id": 101,
+        "id": "AT-0101",
+        "other_item_id": 54,
+        "other_id": "AT-0054",
+        "reason": "due_differs",
+        "reason_text": "same task+owner, due differs (no date vs 2026-10-02)",
+        "due": "no date",
+        "other_due": "2026-10-02",
+        "task_text": "Prepare the renewal one-pager"
+      }
+    ]
+  },
+  "parsing_failures": {
+    "scope": "run",
+    "count": 1,
+    "rows": [
+      {
+        "path": "scratch.md",
+        "code": "E-BINARY",
+        "message": "contains binary data (NUL bytes or binary header); file skipped.",
+        "next_step": "remove it from the notes folder or replace it with a text note."
+      }
+    ]
+  },
+  "warnings": {
+    "scope": "run",
+    "count": 12,
+    "by_code": [
+      {
+        "code": "W-ATTENDEES-MISSING",
+        "count": 2
+      },
+      {
+        "code": "W-CHECKBOX-IGNORED-REGION",
+        "count": 3
+      },
+      {
+        "code": "W-DATE-NOT-DUE",
+        "count": 2
+      },
+      {
+        "code": "W-EMPTY-FILE",
+        "count": 1
+      },
+      {
+        "code": "W-MEETING-DATE-INVALID",
+        "count": 1
+      },
+      {
+        "code": "W-MEETING-DATE-MISSING",
+        "count": 1
+      },
+      {
+        "code": "W-NONCHECKBOX-CANDIDATES",
+        "count": 2
+      }
+    ],
+    "rows": [
+      {
+        "code": "W-EMPTY-FILE",
+        "path": "2026-09-09-notes-final-v2.md",
+        "line": null,
+        "message": "2026-09-09-notes-final-v2.md: file is empty; nothing to ingest. Next: add notes or delete the file.",
+        "notes": []
+      },
+      {
+        "code": "W-CHECKBOX-IGNORED-REGION",
+        "path": "2026-09-21-incident-review.md",
+        "line": 9,
+        "message": "2026-09-21-incident-review.md:9: checkbox inside an ignored region (code fence or comment); not imported. Next: move it out of the region.",
+        "notes": []
+      },
+      {
+        "code": "W-ATTENDEES-MISSING",
+        "path": "2026-09-23-standup.md",
+        "line": null,
+        "message": "2026-09-23-standup.md: no attendees listed. Next: add an 'Attendees:' line so owners can be resolved.",
+        "notes": []
+      },
+      {
+        "code": "W-DATE-NOT-DUE",
+        "path": "2026-09-29-billing-cutover-planning.md",
+        "line": 12,
+        "message": "2026-09-29-billing-cutover-planning.md:12: phrase '9 Oct' is not a due date; kept as other date. Next: write 'due <date>' if it is one.",
+        "notes": []
+      },
+      {
+        "code": "W-NONCHECKBOX-CANDIDATES",
+        "path": "2026-09-30-q4-offsite.md",
+        "line": 22,
+        "message": "2026-09-30-q4-offsite.md:22: possible action line is not a checkbox and was not imported. Next: turn it into '- [ ] ...' if it is an action.",
+        "notes": []
+      },
+      {
+        "code": "W-NONCHECKBOX-CANDIDATES",
+        "path": "2026-09-30-q4-offsite.md",
+        "line": 24,
+        "message": "2026-09-30-q4-offsite.md:24: possible action line is not a checkbox and was not imported. Next: turn it into '- [ ] ...' if it is an action.",
+        "notes": []
+      },
+      {
+        "code": "W-MEETING-DATE-INVALID",
+        "path": "2026-10-03-sales-pipeline.md",
+        "line": 2,
+        "message": "2026-10-03-sales-pipeline.md:2: meeting date 'sometime last week' is not a valid date; date left empty. Next: write it as YYYY-MM-DD.",
+        "notes": []
+      },
+      {
+        "code": "W-DATE-NOT-DUE",
+        "path": "2026-10-08-billing-go-no-go.md",
+        "line": 11,
+        "message": "2026-10-08-billing-go-no-go.md:11: phrase '9 Oct' is not a due date; kept as other date. Next: write 'due <date>' if it is one.",
+        "notes": []
+      },
+      {
+        "code": "W-CHECKBOX-IGNORED-REGION",
+        "path": "2026-10-09-security-review.md",
+        "line": 10,
+        "message": "2026-10-09-security-review.md:10: checkbox inside an ignored region (code fence or comment); not imported. Next: move it out of the region.",
+        "notes": []
+      },
+      {
+        "code": "W-CHECKBOX-IGNORED-REGION",
+        "path": "2026-10-09-security-review.md",
+        "line": 13,
+        "message": "2026-10-09-security-review.md:13: checkbox inside an ignored region (code fence or comment); not imported. Next: move it out of the region.",
+        "notes": []
+      },
+      {
+        "code": "W-ATTENDEES-MISSING",
+        "path": "untitled.md",
+        "line": null,
+        "message": "untitled.md: no attendees listed. Next: add an 'Attendees:' line so owners can be resolved.",
+        "notes": []
+      },
+      {
+        "code": "W-MEETING-DATE-MISSING",
+        "path": "untitled.md",
+        "line": null,
+        "message": "untitled.md: no meeting date found; relative due dates stay unresolved. Next: add a 'Date: YYYY-MM-DD' line.",
+        "notes": []
+      }
+    ]
+  },
+  "owner_reresolution": {
+    "scope": "run",
+    "count": 0,
+    "rows": []
+  },
+  "finalisation_error": null,
+  "exit_code": 5,
+  "exit_reason": "1 file failed"
+}

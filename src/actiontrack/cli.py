@@ -23,8 +23,8 @@ Flow of one invocation
 Dispatch-stub contract (replace one by one in M2-M8)
 ----------------------------------------------------
 ``HANDLERS`` maps each of ``ingest``, ``list``, ``done``, ``followup``, ``gmail-login`` to a
-callable ``handler(ctx: CliContext) -> int | None``. In M1 the four result commands are
-``not_implemented_handler(command)``: it raises ``NotImplementedYet`` (an ``InternalError``,
+callable ``handler(ctx: CliContext) -> int | None``. ``ingest`` is real since M5 (``ingest_handler``); in M1 the
+result commands were ``not_implemented_handler(command)`` and ``list``, ``done``, ``followup`` still are: it raises ``NotImplementedYet`` (an ``InternalError``,
 exit 1) whose message is "<command>: not implemented in this build" (stderr, no traceback).
 ``gmail-login`` is real only for the ``handoff``/``fake`` channels ("not needed" no-op, exit 0);
 for ``google`` it is the same stub (M8). Handlers get everything through ``CliContext``
@@ -415,10 +415,17 @@ def _validate_followup(args: argparse.Namespace) -> None:
         )
 
 
+def _validate_ingest(args: argparse.Namespace) -> None:
+    """``<folder>`` must name something (an empty or blank folder is a usage error, exit 2)."""
+    if not str(args.folder).strip():
+        raise UsageError("ingest needs a non-empty <folder>", next_step='run "actiontrack ingest --help" for usage')
+
+
 #: ``validate_args`` extension point: ``command -> callable(args)`` raising ``UsageError``.
 #: ``list`` conflicts (``--include-ambiguous`` without ``--owner``, ``--ambiguous`` with
 #: ``--owner``, AC-02.9) are deliberately NOT implemented here; M6 registers them.
 VALIDATORS: dict[str, Callable[[argparse.Namespace], None]] = {
+    "ingest": _validate_ingest,
     "followup": _validate_followup,
 }
 
@@ -462,9 +469,49 @@ def _gmail_login(ctx: CliContext) -> int | None:
     raise NotImplementedYet("gmail-login")  # google channel: M8
 
 
+def ingest_handler(ctx: CliContext) -> int | None:
+    """``actiontrack ingest <folder> [--no-recursive] [--dry-run]`` (T-M5-18; spec 4.1, 4.2, 11).
+
+    Runs ``services.ingest.run_ingest`` and prints the report to stdout (table, or JSON with ``--format json``).
+    Diagnostics go to stderr through ``ctx.diag``: one line per warning (hidden by ``--quiet``), one line per
+    failed file with what/where/next (errors are never hidden), the run-finalisation failure, and the summary
+    line (printed in every mode, AC-09.9). The exit code is the report's: 0, 5 (>= 1 file failed) or 4
+    (finalisation failed). Environment errors (folder missing/unreadable, database unusable or locked) are raised
+    by the service BEFORE anything is written and mapped to exit 4 by ``main``; nothing is printed to stdout then.
+    """
+    from actiontrack.report.ingest_report import render_ingest_json, render_ingest_table, summary_line
+    from actiontrack.services.ingest import run_ingest
+
+    args = ctx.args
+    result = run_ingest(
+        ctx.db_path,
+        args.folder,
+        cfg=ctx.config,
+        run_ctx=ctx.run,
+        recursive=not args.no_recursive,
+        dry_run=args.dry_run,
+    )
+    report = result.report
+    assert report is not None  # run_ingest always builds it
+    if ctx.format == "json":
+        io.emit(render_ingest_json(report), end="")
+    else:
+        io.emit(render_ingest_table(report, verbose=ctx.diag.verbose))
+    for w in report.warnings:
+        if w.code.startswith("W-"):
+            ctx.diag.warn(w.code, w.message)
+    for failure in report.failures:
+        nxt = f" Next: {failure.next_step}" if failure.next_step else ""
+        ctx.diag.error(f"{failure.path}: {failure.message}{nxt}", code=failure.code)
+    if report.finalisation_error:
+        ctx.diag.error(report.finalisation_error)
+    ctx.diag.summary(summary_line(report))
+    return report.exit_code
+
+
 #: Late-bound command handlers; later milestones replace the stubs one by one.
 HANDLERS: dict[str, Handler] = {
-    "ingest": not_implemented_handler("ingest"),
+    "ingest": ingest_handler,
     "list": not_implemented_handler("list"),
     "done": not_implemented_handler("done"),
     "followup": not_implemented_handler("followup"),

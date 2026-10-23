@@ -12,6 +12,7 @@ Sections
 4. Persisting a new file (T-M5-07)                             -- implemented
 5. Matching integration (T-M5-08..11/22) -- implemented; 5b. changed files, missing files, source_state (T-M5-12/13) -- implemented
 6. 6a. Whole-database owner re-resolution persisted (T-M4-15); 6b. finalisation (T-M5-14), dry run (T-M5-17), driver ``run_ingest`` -- implemented
+7. The ingest report model and counting rules (T-M5-15), exit status (T-M5-18)        -- implemented
 
 Section 1 public API (T-M5-03; spec FR-01.1, AC-01.1, 10.7.1, 10.7.5, BR-18, NFR-DET-01)
 --------------------------------------------------------------------------------------
@@ -122,6 +123,12 @@ fault_hook=None, match=None, reingest=None) -> IngestResult`` (discover -> sessi
 ``process_plan`` -> ``mark_missing_files`` -> ``finalise_run``). ``IngestResult`` adds ``finalisation``,
 ``.reresolution``, ``.conflicts``, ``.finalisation_error``, ``.dry_run``; ``exit_code`` is 5 when a file failed else 0.
 ``--dry-run`` runs the identical pipeline on an in-memory copy (no file, run row, lock or side file is written).
+
+Section 7 public API (T-M5-15 / T-M5-18; spec 4.1, 4.2, 11): ``build_ingest_report(repo, *, run, run_row, counters, outcomes,
+missing, finalisation, folder_root, recursive, as_of, timezone, subfolder_md_count, exit_code, exit_reason) -> IngestReport``
+(called inside the session by ``run_ingest``; ``IngestResult.report``), ``ingest_exit_status(counters, finalisation_error) ->
+(code, reason)``: 4 when finalisation failed, else 5 when a file failed, else 0 (``IngestResult.exit_code`` / ``.exit_reason``).
+The counting definitions are written in the SECTION 7 comment; the model is ``domain.models.IngestReport``.
 """
 
 from __future__ import annotations
@@ -133,6 +140,7 @@ import os
 import traceback
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from types import SimpleNamespace
 from datetime import UTC, date, datetime
 
 from actiontrack import codes
@@ -161,6 +169,12 @@ from actiontrack.domain.status import (
     reopens,
 )
 from actiontrack.domain.models import (
+    DueIssueRow,
+    DuplicatePairRow,
+    FailureRow,
+    IngestReport,
+    OwnerIssueRow,
+    OwnerReResolutionRow,
     OwnerRole,
     OwnerStatus,
     ParsedFile,
@@ -168,7 +182,10 @@ from actiontrack.domain.models import (
     ParseWarning,
     Person,
     Provenance,
+    ReportFileCounts,
+    ReportItemCounts,
     ResolvedOwner,
+    WarningRow,
     format_item_id,
     ingest_order_key,
     parse_message,
@@ -190,13 +207,22 @@ from actiontrack.resolution.owners import (
     StoredAttendee,
     StoredMeeting,
     StoredOwner,
+    candidate_key,
+    owner_display,
     re_resolve,
     resolve_attendees,
     resolve_owner,
 )
 from actiontrack.resolution.people import MergeRecord, PeopleRegistry, file_transaction, known_name_predicate
 from actiontrack.store.db import Database
-from actiontrack.store.repo import IngestRunRow, ItemSourceRow, Repo, SourceFileRow, to_storage_text
+from actiontrack.store.repo import (
+    IngestRunRow,
+    ItemOwnerRow,
+    ItemSourceRow,
+    Repo,
+    SourceFileRow,
+    to_storage_text,
+)
 
 # =============================================================================================
 # SECTION 1 -- Ordering and the file plan (T-M5-03)
@@ -1689,7 +1715,12 @@ def _mark_file_missing(env: IngestEnv, row: SourceFileRow) -> MissingOutcome:
             codes.REGISTRY[codes.W_FILE_MISSING].format(path=rel),
             source_file_id=row.id,
         )
-    became = recompute_source_state(repo, {s.item_id for s in marked})
+    affected = sorted({s.item_id for s in marked})
+    for item_id in affected:
+        # §10.6.1: canonical fields follow the PRESENT sources only while one exists (an item that lost one of
+        # several sources must not keep the deleted file's description/due/owners).
+        recompute_canonical(repo, item_id, env.run_id)
+    became = recompute_source_state(repo, affected)
     return MissingOutcome(rel, row.id, len(marked), tuple(became), warn)
 
 
@@ -2055,6 +2086,10 @@ class IngestResult:
     missing: tuple[MissingOutcome, ...] = ()
     #: the finalisation transaction (T-M5-14); in a dry run: what it would have done
     finalisation: Finalisation = Finalisation()
+    #: ``.md`` files below the top level, counted only under ``--no-recursive`` (AC-01.13 hint), else 0
+    subfolder_md_count: int = 0
+    #: the ingest report (T-M5-15), built inside the session from the state after finalisation
+    report: IngestReport | None = None
 
     @property
     def reresolution(self) -> ReResolutionApplied:
@@ -2075,8 +2110,16 @@ class IngestResult:
 
     @property
     def exit_code(self) -> int:
-        """5 when at least one file failed (spec 4.1), else 0 (T-M5-18 owns the final mapping)."""
-        return int(ExitCode.INGEST_FILE_FAILURES) if self.counters.files_failed else int(ExitCode.OK)
+        """Exit code of a run that got as far as a result (T-M5-18; spec 4.1): 4 when the whole-database
+        finalisation failed (environment-class failure, takes precedence), else 5 when at least one file failed,
+        else 0. ``W-*`` warnings never change it. Environment errors that stop the run before a result exists
+        (folder, database, lock) raise ``EnvError`` instead."""
+        return ingest_exit_status(self.counters, self.finalisation_error)[0]
+
+    @property
+    def exit_reason(self) -> str | None:
+        """Text after ``Exit code N`` in the report: None for 0, else why."""
+        return ingest_exit_status(self.counters, self.finalisation_error)[1]
 
 
 def run_ingest(
@@ -2121,6 +2164,326 @@ def run_ingest(
             counters.record(outcome)
         assert counters.invariant_holds(), "discovered = ingested + unchanged + empty + failed"
         final, row = finalise_run(env, counters)
-        return IngestResult(
-            session.run, row, counters, tuple(outcomes), plan, discovery.warnings, tuple(missing), final
+        exit_code, exit_reason = ingest_exit_status(counters, final.error)
+        report = build_ingest_report(
+            repo,
+            run=session.run,
+            run_row=row,
+            counters=counters,
+            outcomes=outcomes,
+            missing=missing,
+            finalisation=final,
+            folder_root=root,
+            recursive=recursive,
+            as_of=run_ctx.today,
+            timezone=run_ctx.tz_label,
+            subfolder_md_count=discovery.subfolder_md_count,
+            exit_code=exit_code,
+            exit_reason=exit_reason,
         )
+        return IngestResult(
+            session.run,
+            row,
+            counters,
+            tuple(outcomes),
+            plan,
+            discovery.warnings,
+            tuple(missing),
+            final,
+            discovery.subfolder_md_count,
+            report,
+        )
+
+
+# =============================================================================================
+# SECTION 7 -- The ingest report model and its counting rules (T-M5-15; spec 4.2 "Report definitions", G-25)
+# =============================================================================================
+#
+# ``build_ingest_report(repo, *, run, run_row, counters, outcomes, missing, finalisation, folder_root, recursive,
+# as_of, timezone, subfolder_md_count, exit_code, exit_reason) -> IngestReport`` is called by ``run_ingest`` INSIDE
+# the session, after finalisation, so it sees the state the run leaves behind (a dry run: the in-memory copy). It
+# only reads. The model types and the scope rules (run-scoped counts vs state-scoped OPEN-item sections) are
+# documented with ``domain.models.IngestReport``; rendering lives in ``report/ingest_report.py``.
+#
+# Counting definitions (spec 4.2, one place):
+#   * Files (run-scoped, from the file outcomes): discovered = ingested + unchanged + empty + failed; an empty or
+#     failed file is counted EVERY run and is never "unchanged". ``missing`` / ``symlinks_skipped`` are notices.
+#   * Items (run-scoped, from the counters): each source parsed from an INGESTED file is classified exactly once
+#     (new | merged-duplicates (Tier-1 or Tier-1b) | updated | unchanged); possible-duplicates = links created this
+#     run; already-done-in-note = ``[x]`` sources imported this run (orthogonal).
+#   * Sections (state-scoped, OPEN items only, all folder roots, i.e. what ``list`` shows): unresolved owners (one
+#     row per ambiguous / unassigned / provisional owner row, by item id then ordinal; an open item without any
+#     owner row counts as unassigned), items without a usable due date (``due_date`` NULL: confidence ``none`` =
+#     "no date", ``unresolved`` = the raw text and the reason), possible-duplicate pairs (a pair is listed when at
+#     least one of its two items is open). Each heading count is that state count.
+#   * ``resolved_via_attendance`` = the counter set by finalisation: a state count of owner rows with provenance
+#     ``attendee_in_meeting`` over the whole database.
+#   * Failures and warnings are run-scoped (``ingest_warning`` rows of this run; a file failure is listed under
+#     failures, not warnings). A W-OWNER-NOW-AMBIGUOUS warning for an item merged or completed under the earlier
+#     resolution carries the H-05 note (``WarningRow.notes``), as do the item's unresolved-owner row and its
+#     re-resolution row (G-C23).
+#   * Exit code (``ingest_exit_status``): 4 if finalisation failed, else 5 if >= 1 file failed, else 0.
+
+_PAIR_REASON_TEXT = {
+    codes.ItemLinkReason.DUE_DIFFERS.value: "same task+owner, due differs ({due} vs {other_due})",
+    codes.ItemLinkReason.OWNER_DIFFERS.value: "same task, owner differs ({owner} vs {other_owner})",
+    codes.ItemLinkReason.STATUS_DIFFERS.value: "same task+owner, status differs ({status} vs {other_status})",
+    codes.ItemLinkReason.SAME_FILE.value: "same task twice in one file",
+    codes.ItemLinkReason.RECURRENCE.value: "same task in a recurring meeting",
+    codes.ItemLinkReason.OUTSIDE_WINDOW.value: "same task, notes far apart in time",
+    codes.ItemLinkReason.FUZZY.value: "similar task text",
+    codes.ItemLinkReason.OWNER_UNRESOLVED.value: "same task, owner not resolved",
+}
+
+
+def ingest_exit_status(counters: RunCounters, finalisation_error: str | None) -> tuple[int, str | None]:
+    """``(exit code, reason text)`` of a run that produced a result (spec 4.1, T-M5-18)."""
+    if finalisation_error:
+        return int(ExitCode.ENVIRONMENT), "run finalisation failed; files already ingested are kept"
+    if counters.files_failed:
+        n = counters.files_failed
+        return int(ExitCode.INGEST_FILE_FAILURES), f"{n} file{'s' if n != 1 else ''} failed"
+    return int(ExitCode.OK), None
+
+
+def _split_next(message: str) -> tuple[str, str | None]:
+    what, sep, nxt = message.partition(" Next: ")
+    return (what, nxt) if sep else (message, None)
+
+
+def _strip_where(message: str, rel_path: str) -> str:
+    prefix = f"{rel_path}: "
+    return message[len(prefix):] if message.startswith(prefix) else message
+
+
+def _due_text(item: object) -> str:
+    due = getattr(item, "due_date", None)
+    if due is not None:
+        return due.isoformat()
+    if getattr(item, "due_confidence", "none") == "unresolved":
+        return f'unresolved "{getattr(item, "due_raw", None) or ""}"'
+    return "no date"
+
+
+def build_ingest_report(
+    repo: Repo,
+    *,
+    run: RunHandle,
+    run_row: IngestRunRow,
+    counters: RunCounters,
+    outcomes: Sequence[FileOutcome],
+    missing: Sequence[MissingOutcome] = (),
+    finalisation: Finalisation = Finalisation(),
+    folder_root: str,
+    recursive: bool,
+    as_of: date,
+    timezone: str,
+    subfolder_md_count: int = 0,
+    exit_code: int | None = None,
+    exit_reason: str | None = None,
+) -> IngestReport:
+    """Build the report (section comment above) from the run, the counters, the outcomes and the CURRENT state."""
+    if exit_code is None:
+        exit_code, exit_reason = ingest_exit_status(counters, finalisation.error)
+    registry = repo.load_registry()
+    files = {f.id: f for f in repo.list_source_files()}
+
+    # ---- sources per item: location of the first source (present ones first), "(+N)" for the others
+    by_item: dict[int, list[ItemSourceRow]] = {}
+    for src in repo.list_item_sources():
+        by_item.setdefault(src.item_id, []).append(src)
+
+    def first_source(item_id: int) -> tuple[str | None, int, str]:
+        srcs = by_item.get(item_id, [])
+        if not srcs:
+            return None, 0, ""
+
+        def key(s: ItemSourceRow) -> tuple[int, str, int, int]:
+            sf = files.get(s.source_file_id)
+            return (0 if s.present else 1, sf.rel_path if sf else "", s.line_start, s.id)
+
+        ordered = sorted(srcs, key=key)
+        first = ordered[0]
+        sf = files.get(first.source_file_id)
+        rel = sf.rel_path if sf else "?"
+        group = [s for s in ordered if s.present == first.present]
+        return f"{rel}:{first.line_start}", len(group) - 1, first.raw_text
+
+    items_all = {i.id: i for i in repo.list_action_items()}
+    open_ids = [i for i in sorted(items_all) if items_all[i].status == "open"]
+    owners_by_item: dict[int, list[ItemOwnerRow]] = {}
+    for o in repo.list_all_item_owners():
+        owners_by_item.setdefault(o.item_id, []).append(o)
+
+    h05_items = {c.item_id for c in finalisation.reresolution.changes if c.merged_or_completed_under_earlier_resolution}
+
+    def names(cands: Iterable[str]) -> tuple[str, ...]:
+        return tuple(
+            sorted((registry.full_name(c) if c in registry else c for c in candidate_key(cands)), key=str.casefold)
+        )
+
+    # ---- unresolved owners (open items, state-scoped)
+    kinds = {
+        OwnerStatus.AMBIGUOUS.value: "ambiguous",
+        OwnerStatus.UNASSIGNED.value: "unassigned",
+        OwnerStatus.PROVISIONAL.value: "unverified",
+    }
+    owner_rows: list[OwnerIssueRow] = []
+    for item_id in open_ids:
+        loc, extra, raw = first_source(item_id)
+        notes = (H05_NOTE,) if item_id in h05_items else ()
+        rows = owners_by_item.get(item_id, [])
+        if not rows:
+            owner_rows.append(OwnerIssueRow(item_id, loc, extra, "unassigned", None, raw, (), notes))
+        for o in rows:
+            kind = kinds.get(o.owner_status)
+            if kind is None:
+                continue
+            cands = names(o.candidates) if kind == "ambiguous" else ()
+            owner_rows.append(OwnerIssueRow(item_id, loc, extra, kind, o.owner_raw, raw, cands, notes))
+
+    # ---- missing / unresolved due dates (open items, state-scoped)
+    due_rows: list[DueIssueRow] = []
+    for item_id in open_ids:
+        item = items_all[item_id]
+        if item.due_date is not None:
+            continue
+        loc, extra, raw = first_source(item_id)
+        if item.due_confidence == "unresolved":
+            due_rows.append(DueIssueRow(item_id, loc, extra, "unresolved", raw, item.due_raw, item.due_reason))
+        else:
+            due_rows.append(DueIssueRow(item_id, loc, extra, "no_date", raw))
+
+    # ---- possible duplicate pairs (at least one open item)
+    def owner_text(item_id: int) -> str:
+        shown = [
+            owner_display(
+                SimpleNamespace(
+                    status=o.owner_status, candidates=o.candidates, owner_raw=o.owner_raw, person_id=o.person_id
+                ),
+                registry,
+            ).text
+            for o in owners_by_item.get(item_id, [])
+        ]
+        return ", ".join(t for t in shown if t) or "no owner"
+
+    pairs: list[DuplicatePairRow] = []
+    for link in repo.list_links("possible_duplicate"):
+        a, b = items_all.get(link.from_item_id), items_all.get(link.to_item_id)
+        if a is None or b is None or "open" not in (a.status, b.status):
+            continue
+        reason = link.reason or ""
+        later, earlier = b, a  # stored from < to; shown as ``later ~ earlier``
+        text = _PAIR_REASON_TEXT.get(reason, "possible duplicate").format(
+            due=_due_text(later),
+            other_due=_due_text(earlier),
+            owner=owner_text(later.id),
+            other_owner=owner_text(earlier.id),
+            status=later.status,
+            other_status=earlier.status,
+        )
+        pairs.append(
+            DuplicatePairRow(later.id, earlier.id, reason, text, _due_text(later), _due_text(earlier), later.task_text)
+        )
+    pairs.sort(key=lambda p: (p.other_item_id, p.item_id))
+
+    # ---- run-scoped: failures, warnings, notices
+    run_warnings = repo.list_warnings(run_row.id)
+    failed = sorted((o for o in outcomes if o.result == "failed"), key=lambda o: o.rel_path)
+    failure_rows: list[FailureRow] = []
+    failed_file_ids: set[int | None] = set()
+    for o in failed:
+        code = o.failure_code or codes.E_INTERNAL_PARSE
+        message = o.failure_message
+        if message is None:
+            message = next(
+                (w.message for w in run_warnings if w.code == code and w.source_file_id == o.source_file_id), code
+            )
+        what, nxt = _split_next(_strip_where(message, o.rel_path))
+        failure_rows.append(FailureRow(o.rel_path, code, what, nxt))
+        failed_file_ids.add(o.source_file_id)
+
+    warning_rows: list[WarningRow] = []
+    for w in run_warnings:
+        if w.code == codes.E_INTERNAL_PARSE and w.source_file_id is None:
+            continue  # run-level finalisation failure: carried by ``finalisation_error``
+        if w.code.startswith("E-") and w.source_file_id in failed_file_ids:
+            continue  # already a failure row
+        sf = files.get(w.source_file_id) if w.source_file_id is not None else None
+        notes = (H05_NOTE,) if w.code == codes.W_OWNER_NOW_AMBIGUOUS and H05_NOTE in w.message else ()
+        warning_rows.append(WarningRow(w.code, sf.rel_path if sf else None, w.line, w.message, notes))
+    warning_rows.sort(key=lambda w: (w.path or "", w.line or 0, w.code, w.message))
+
+    reres_rows: list[OwnerReResolutionRow] = []
+    for c in sorted(finalisation.reresolution.changes, key=lambda c: (c.item_id, c.ordinal)):
+        loc, _extra, _raw = first_source(c.item_id)
+        reres_rows.append(
+            OwnerReResolutionRow(
+                c.item_id,
+                loc,
+                c.owner_raw,
+                c.kind,
+                str(c.old_status),
+                str(c.new_status),
+                names(c.new_candidates) if c.new_candidates else (),
+                (H05_NOTE,) if c.merged_or_completed_under_earlier_resolution else (),
+            )
+        )
+
+    notices: list[str] = []
+    if run.dry_run:
+        notices.append(f"Dry run: nothing was written; #{run.run_id} is the number a real run would get")
+    notices.extend(i.message for i in run.interrupted)
+    notices.extend(
+        f"run #{rid} is still marked in progress (another process may be running); not marked interrupted"
+        for rid in run.in_progress_elsewhere
+    )
+    hint = None
+    if not recursive and counters.files_discovered == 0 and subfolder_md_count > 0:
+        hint = (
+            f"0 .md files at the top level; {subfolder_md_count} .md files exist in subfolders. "
+            "Re-run without --no-recursive"
+        )
+
+    file_counts = ReportFileCounts(
+        counters.files_discovered,
+        counters.files_ingested,
+        counters.files_unchanged,
+        counters.files_empty,
+        counters.files_failed,
+        sum(1 for m in missing if m.failure_code is None and m.warned),
+        sum(1 for w in run_warnings if w.code == codes.W_SYMLINK_SKIPPED),
+    )
+    item_counts = ReportItemCounts(
+        counters.items_new,
+        counters.items_updated,
+        counters.items_unchanged,
+        counters.items_merged,
+        counters.possible_duplicates,
+        counters.already_done_in_note,
+    )
+    return IngestReport(
+        run_id=run_row.id,
+        status=run_row.status,
+        dry_run=run.dry_run,
+        folder=folder_root,
+        recursive=recursive,
+        as_of=as_of,
+        timezone=timezone,
+        started_at=run_row.started_at,
+        finished_at=run_row.finished_at,
+        files=file_counts,
+        items=item_counts,
+        resolved_via_attendance=counters.resolved_via_attendance,
+        unresolved_owners=tuple(owner_rows),
+        missing_due_dates=tuple(due_rows),
+        possible_duplicate_pairs=tuple(pairs),
+        failures=tuple(failure_rows),
+        warnings=tuple(warning_rows),
+        reresolution=tuple(reres_rows),
+        notices=tuple(notices),
+        hint=hint,
+        finalisation_error=finalisation.error,
+        exit_code=exit_code,
+        exit_reason=exit_reason,
+    )
