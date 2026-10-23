@@ -1,0 +1,72 @@
+# actiontrack example configuration.
+# Copy to `actiontrack.toml` (git-ignored: it holds real e-mail addresses) or pass it with --config.
+# The roster below is for the 9 people in the bundled sample notes; the two e-mail addresses are SAMPLES.
+# Every person needs a first AND last name (identity = First + Last). An empty e-mail means
+# "can be tracked and listed, but `followup` cannot address a draft to them".
+
+timezone   = "Asia/Kolkata"   # recommended; if omitted, a fixed-offset label from the OS is used
+date_order = ""               # "dmy" | "mdy" | "" (unset => ambiguous numeric dates like 03/04 stay unresolved)
+
+[limits]
+max_file_bytes  = 5242880     # notes larger than this are skipped (E-TOO-LARGE)
+dup_window_days = 60          # automatic duplicate merging only between meetings this close together
+fuzzy_threshold = 0.85
+
+[owners]
+attendee_disambiguation = true   # a bare first name is resolved only if exactly one namesake attended
+
+[gmail]
+channel             = "handoff"                 # follow-up drafts are prepared as a handoff file (never sent)
+handoff_dir         = ".actiontrack/handoff"    # holds e-mail bodies: keep it out of git (it is git-ignored here)
+include_signature   = false
+timeout_seconds     = 30
+verify_after_create = true
+
+[[person]]
+first_name = "Priya"
+last_name  = "Nair"
+email      = "angad.kulkarni@coditas.com"       # SAMPLE address
+aliases    = ["Priya N."]
+
+[[person]]
+first_name = "Priya"
+last_name  = "Shah"
+email      = "pranay.pathak@coditas.com"        # SAMPLE address
+aliases    = ["Priya S."]
+
+[[person]]
+first_name = "Rahul"
+last_name  = "Mehta"
+email      = ""
+aliases    = ["Rahul M."]
+
+[[person]]
+first_name = "Rahul"
+last_name  = "Verma"
+email      = ""
+aliases    = ["Rahul V."]
+
+[[person]]
+first_name = "Anita"
+last_name  = "Desai"
+email      = ""
+
+[[person]]
+first_name = "Sam"
+last_name  = "Okafor"
+email      = ""
+
+[[person]]
+first_name = "Meera"
+last_name  = "Iyer"
+email      = ""
+
+[[person]]
+first_name = "Karan"
+last_name  = "Joshi"
+email      = ""
+
+[[person]]
+first_name = "Lena"
+last_name  = "Fischer"
+email      = ""

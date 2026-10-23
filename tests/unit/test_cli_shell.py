@@ -64,13 +64,12 @@ def test_all_five_commands_registered():
     assert tuple(COMMANDS) == cli.COMMANDS
 
 
-# M5 (T-M5-18): ``ingest`` has a real handler now; the others are still stubs.
-@pytest.mark.parametrize("command", [c for c in RESULT_COMMANDS if c != "ingest"])
-def test_stub_handlers_exit_1(capsys, tmp_workdir, command):
-    rc, out, err = run(capsys, *MINIMAL[command])
-    assert rc == int(ExitCode.INTERNAL_ERROR)
+# All four real commands have handlers now; followup without an ingested database exits 3 (like list/done).
+def test_followup_without_database_exits_3(capsys, tmp_workdir):
+    rc, out, err = run(capsys, *MINIMAL["followup"])
+    assert rc == int(ExitCode.NOT_FOUND)
     assert out == ""
-    assert f"{command}: not implemented in this build" in err
+    assert "database not found" in err and "actiontrack ingest" in err
     assert "Traceback" not in err
 
 
@@ -167,13 +166,20 @@ def test_followup_accepts_force_and_format(monkeypatch, capsys, tmp_workdir):
 def test_list_options_parse(monkeypatch, capsys, tmp_workdir, seen):
     rc, _, _ = run(
         capsys, "list", "--owner", "Priya Shah", "--status", "all", "--due-before", "2026-10-30",
-        "--include-ambiguous", "--ambiguous", "--wide",
+        "--include-ambiguous", "--wide",
     )
-    # argument-conflict rules (AC-02.9) are M6's job: the shell only parses
     assert rc == 0
     a = seen[0].args
     assert a.owner == "Priya Shah" and a.status == "all" and a.due_before == "2026-10-30"
-    assert a.include_ambiguous and a.ambiguous and a.wide
+    assert a.include_ambiguous and not a.ambiguous and a.wide
+
+
+def test_list_option_conflicts_are_usage_errors(capsys, tmp_workdir, seen):
+    """M6 registers the AC-02.9 / AC-02.11 conflict rules in ``VALIDATORS`` (exit 2, handler never called)."""
+    for argv in (["--owner", "X", "--ambiguous"], ["--include-ambiguous"], ["--ambiguous", "--include-ambiguous"]):
+        rc, out, err = run(capsys, "list", *argv)
+        assert rc == 2 and out == "" and "--" in err
+    assert seen == []
 
 
 def test_list_status_default_open(seen, capsys, tmp_workdir):

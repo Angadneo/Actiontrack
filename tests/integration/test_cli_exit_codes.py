@@ -58,15 +58,13 @@ def test_exit_0_gmail_login_handoff_noop(tmp_workdir):
     assert list(tmp_workdir.iterdir()) == []
 
 
-# M5 (T-M5-18): ``ingest`` is a real command now; only list / done / followup are still dispatch stubs.
-@pytest.mark.parametrize("command", ["list", "done", "followup"])
-def test_exit_1_stub_commands(tmp_workdir, command):
-    args = {"list": ["list"], "done": ["done", "1"], "followup": ["followup", "A B"]}
-    r = at(*args[command], cwd=tmp_workdir)
-    assert r.returncode == 1
-    assert r.stdout == b""
+# All four real commands are implemented; list/done/followup need an ingested database.
+@pytest.mark.parametrize("args", [["list"], ["done", "1"], ["followup", "A B"]])
+def test_exit_3_list_done_followup_without_database_create_nothing(tmp_workdir, args):
+    r = at(*args, cwd=tmp_workdir)
+    assert r.returncode == 3 and r.stdout == b""
     err = text(r.stderr)
-    assert f"{command}: not implemented in this build" in err and "Traceback" not in err
+    assert "database not found" in err and "actiontrack ingest" in err and "Traceback" not in err
     assert not (tmp_workdir / ".actiontrack").exists()
 
 

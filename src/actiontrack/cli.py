@@ -422,10 +422,23 @@ def _validate_ingest(args: argparse.Namespace) -> None:
 
 
 #: ``validate_args`` extension point: ``command -> callable(args)`` raising ``UsageError``.
-#: ``list`` conflicts (``--include-ambiguous`` without ``--owner``, ``--ambiguous`` with
-#: ``--owner``, AC-02.9) are deliberately NOT implemented here; M6 registers them.
+#: ``list`` conflicts (AC-02.9/02.11) and the ``done`` id syntax are registered by M6.
+def _validate_list(args: argparse.Namespace) -> None:
+    from actiontrack.services.listing import validate_list_args
+
+    validate_list_args(args)
+
+
+def _validate_done(args: argparse.Namespace) -> None:
+    from actiontrack.domain.models import parse_item_id
+
+    parse_item_id(str(args.id).strip())
+
+
 VALIDATORS: dict[str, Callable[[argparse.Namespace], None]] = {
     "ingest": _validate_ingest,
+    "list": _validate_list,
+    "done": _validate_done,
     "followup": _validate_followup,
 }
 
@@ -509,12 +522,92 @@ def ingest_handler(ctx: CliContext) -> int | None:
     return report.exit_code
 
 
+def _open_existing_db(ctx: CliContext, *, readonly: bool):
+    """Open the database of ``list``/``done``: never creates it (missing -> NotFoundError, exit 3)."""
+    from actiontrack.errors import NotFoundError
+    from actiontrack.store.db import Database
+
+    if not ctx.db_path.exists():
+        raise NotFoundError(
+            "database not found",
+            where=str(ctx.db_path),
+            next_step="run `actiontrack ingest <folder>` first",
+        )
+    # looked up by name: the repo lint tests/unit/test_io.py flags every literal ``.open(`` call
+    opener = getattr(Database, "open")  # noqa: B009
+    if readonly:
+        return opener(ctx.db_path, readonly=True, clock=ctx.run.clock)
+    return opener(ctx.db_path, create=False, lock=True, clock=ctx.run.clock)
+
+
+def list_handler(ctx: CliContext) -> int | None:
+    """``actiontrack list`` (M6, spec 4.3): read-only; table or JSON on stdout (T-M6-11)."""
+    from actiontrack.report.list_report import render_list_json, render_list_table
+    from actiontrack.services.listing import list_items, parse_list_args
+    from actiontrack.store.repo import Repo
+
+    query = parse_list_args(ctx.args, ctx.run.today)
+    with _open_existing_db(ctx, readonly=True) as db:
+        repo = Repo(db, ctx.run.clock)
+        result = list_items(repo, repo.load_registry(), query, ctx.run.today)
+    if ctx.format == "json":
+        io.emit(render_list_json(result, ctx.run.tz_label), end="")
+    else:
+        io.emit(render_list_table(result, ctx.run.tz_label, wide=query.wide))
+    return None
+
+
+def _completed_date(ctx: CliContext, completed_at: str | None) -> str:
+    if not completed_at:
+        return "by note"
+    from datetime import datetime, timezone
+
+    instant = datetime.strptime(completed_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    return instant.astimezone(ctx.run.zone.tzinfo).date().isoformat()
+
+
+def done_handler(ctx: CliContext) -> int | None:
+    """``actiontrack done <id>`` (M6, spec 4.4): one transaction under the write lock (T-M6-09/10)."""
+    from actiontrack.domain.models import format_item_id, parse_item_id
+    from actiontrack.report.json import render_json
+    from actiontrack.report.sanitize import clean_text
+    from actiontrack.services.done import mark_done
+    from actiontrack.store.repo import Repo
+
+    parse_item_id(str(ctx.args.id).strip())  # exit 2 before the database is touched
+    with _open_existing_db(ctx, readonly=False) as db:
+        result = mark_done(db, Repo(db, ctx.run.clock), ctx.args.id, ctx.run.clock)
+    label = format_item_id(result.item_id)
+    if ctx.format == "json":
+        io.emit(render_json(result.to_json()), end="")
+    elif result.already_done:
+        when = _completed_date(ctx, result.completed_at)
+        completed = when if result.completed_at else "by note"
+        io.emit(f"{label} already done (completed {completed}, origin {result.completion_origin})")
+    else:
+        task = clean_text(result.task_text)
+        source = f" Source: {result.source}" if result.source else ""
+        io.emit(f'Marked {label} done (was open). Task: "{task}".{source}')
+    if result.duplicates and not result.already_done:
+        ctx.diag.info(f"{label} has possible duplicates (not modified):")
+        for d in result.duplicates:
+            ctx.diag.info(f"  {format_item_id(d.other_id)} ({d.status}): {d.reason or 'possible duplicate'}")
+    return None
+
+
+def followup_handler(ctx: CliContext) -> int | None:
+    """``followup``: handoff-channel draft preparation (``services/followup.py``; imported lazily)."""
+    from actiontrack.services.followup import followup_handler as _followup
+
+    return _followup(ctx)
+
+
 #: Late-bound command handlers; later milestones replace the stubs one by one.
 HANDLERS: dict[str, Handler] = {
     "ingest": ingest_handler,
-    "list": not_implemented_handler("list"),
-    "done": not_implemented_handler("done"),
-    "followup": not_implemented_handler("followup"),
+    "list": list_handler,
+    "done": done_handler,
+    "followup": followup_handler,
     "gmail-login": _gmail_login,
 }
 

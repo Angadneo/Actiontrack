@@ -1108,6 +1108,21 @@ class Repo:
             for r in rows
         ]
 
+    def list_all_source_contexts(self) -> dict[int, list[SourceContextRow]]:
+        """``{item_id: sources}`` for the whole database in one query (``list`` read model, M6); each list is in
+        source id order, like ``list_source_context``."""
+        rows = self.conn.execute(
+            "SELECT s.*, m.meeting_date AS _meeting_date, f.rel_path AS _rel_path, f.folder_root AS _folder_root "
+            "FROM item_source s JOIN source_file f ON f.id = s.source_file_id "
+            "LEFT JOIN meeting m ON m.id = s.meeting_id ORDER BY s.item_id, s.id"
+        ).fetchall()
+        out: dict[int, list[SourceContextRow]] = {}
+        for r in rows:
+            out.setdefault(r["item_id"], []).append(
+                SourceContextRow(self._source_row(r), _date(r["_meeting_date"]), r["_rel_path"], r["_folder_root"])
+            )
+        return out
+
     def item_ids_by_core_key(self, core_key: str) -> list[int]:
         """Ids (ascending) of items whose canonical core key or any source core key equals ``core_key``
         (candidate lookup of 10.6; an empty key matches nothing)."""

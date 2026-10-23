@@ -299,17 +299,15 @@ def test_usage_errors_exit2_stderr_only(work, argv, rc):
     assert list(work.iterdir()) == []
 
 
-# M5 (T-M5-18): ``ingest`` is a real command now (see tests/integration/test_ingest_exit_codes.py); the others
-# are still dispatch stubs.
+# All four real commands are implemented; list/done/followup need an ingested database.
 @pytest.mark.parametrize("command", ["list", "done", "followup"])
-def test_stub_commands_exit1_clean_message_and_touch_nothing(work, command):
-    db = work / "sub" / "actiontrack.db"  # a --db whose folder does not exist: stubs must not create it
+def test_list_done_followup_without_database_exit3_and_touch_nothing(work, command):
+    db = work / "sub" / "actiontrack.db"  # missing: these commands must neither create it nor its folder
     argv = [*VALID_ARGV[command], "--config", str(ROSTER), "--today", TODAY, "--db", str(db)]
     r = run_cli(work, *argv)
-    assert r.rc == 1 and r.out == ""
-    assert f"{command}: not implemented in this build" in r.err
-    assert "Traceback" not in r.err
-    assert list(work.iterdir()) == []  # no DB, no .actiontrack, no lock file
+    assert r.rc == 3 and r.out == ""
+    assert "database not found" in r.err and "actiontrack ingest" in r.err and "Traceback" not in r.err
+    assert list(work.iterdir()) == []
 
 
 def test_gmail_login_handoff_channel_is_noop_exit0(work):
@@ -353,13 +351,13 @@ def test_format_json_before_after_and_last_wins_in_subprocess(work):
 @pytest.mark.ac("AC-09.9")
 def test_quiet_and_log_file_against_stub_command(work):
     log = work / "run.log"
-    plain = run_cli(work, "--today", TODAY, "list")  # no timezone configured -> hint + stub error
-    assert plain.rc == 1 and "note: " in plain.err and "not implemented in this build" in plain.err
+    plain = run_cli(work, "--today", TODAY, "list")  # no timezone configured -> hint + missing-database error
+    assert plain.rc == 3 and "note: " in plain.err and "database not found" in plain.err
 
     quiet = run_cli(work, "--today", TODAY, "--quiet", "list", "--log-file", str(log))
-    assert quiet.rc == 1 and quiet.out == ""
+    assert quiet.rc == 3 and quiet.out == ""
     assert "note: " not in quiet.err  # --quiet hides the info hint
-    assert "list: not implemented in this build" in quiet.err  # errors are kept
+    assert "database not found" in quiet.err  # errors are kept
     text = log.read_bytes().decode("utf-8")
     assert text == quiet.err.replace("\r", "") and "\r" not in text  # log == stderr, LF, UTF-8
 

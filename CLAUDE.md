@@ -6,10 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **M1 (Foundations) is implemented and gated** (497 tests passing): skeleton, exit codes/error registry,
 clock + time zones, config + roster, UTF-8 I/O, table/JSON renderers, logging, SQLite schema + lock +
-migrations + repo base, and the CLI shell (argparse, global options, help). The four real commands
-(`ingest`, `list`, `done`, `followup`) are still **stubs** registered in `cli.HANDLERS`: each exits 1 with
-"not implemented in this build" until its milestone replaces the entry; `gmail-login` is real only for the
-`handoff`/`fake` channels. **M2 (parsing core) and M3 (date resolver) are also implemented and accepted**
+migrations + repo base, and the CLI shell (argparse, global options, help). **All four commands now work on
+the happy flow** (3021 tests): `ingest` (M5), `list` and `done` (M6), `followup` on the handoff channel (M7
+core: preview, confirmation gate, handoff file with checksum, `--record-draft`); try it with
+`scripts/demo.ps1` (see `README.md`). `gmail-login` is real only for the `handoff`/`fake` channels (the
+`google` channel is phase 2). Still missing: T-M5-20 (end-to-end sample suite), host-instruction artifacts
+and the static safety tests (T-M7-14/15/16/18/20/21), and the deferred hardening/golden suites for
+`list`/`done`/`followup`. **M2 (parsing core) and M3 (date resolver) are also implemented and accepted**
 (1983 tests): `actiontrack.parsing.parse_document` is the pure per-file entry point (reader, markdown
 regions, checkboxes, meeting metadata, items, `task_text`, due resolution via `domain.dates.resolve_due`);
 owner extraction is implemented but NOT the default analyzer: pass
@@ -18,8 +21,10 @@ owner extraction is implemented but NOT the default analyzer: pass
 **M4 (people & owners) is implemented and accepted** (2364 tests): `resolution/people.py`
 (`PeopleRegistry`, `resolve_person_query`, `file_transaction`), `resolution/owners.py` (§10.3 resolution,
 pure whole-DB `re_resolve`, ambiguity display hooks) and people persistence in `store/repo.py`
-(`person_alias.auto` was added to migration 0001; databases created before that lack it). Next is **M5**
-(ingest service), then M6/M7/M9. Before writing any
+(`person_alias.auto` was added to migration 0001; databases created before that lack it). **M5 (ingest
+service) is implemented** (matching: Tier-1 merge, Tier-1b completion, links; reconcile of changed/missing
+files; finalisation; report; dry-run; crash-recovery tests). Next: the remaining M7 items and M9
+hardening. Before writing any
 implementation code, read the relevant task file in `specs/tasks/` for the milestone you're working on —
 each task lists size, dependencies, spec references, files to touch, the tests to write first, and a
 done-when condition. Hand-off notes from M1 live in the docstring of `tests/integration/test_m1_exit.py`.

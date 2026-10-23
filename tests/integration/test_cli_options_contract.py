@@ -126,8 +126,8 @@ def test_log_file_via_subprocess_is_utf8(tmp_workdir):
         [sys.executable, "-m", "actiontrack", "list", "--log-file", str(log)],
         capture_output=True, env=env, cwd=tmp_workdir, timeout=60,
     )
-    assert r.returncode == 1  # stub
-    assert "list: not implemented in this build" in log.read_text(encoding="utf-8")
+    assert r.returncode == 3  # M6: list is real; there is no database in the empty work dir
+    assert "database not found" in log.read_text(encoding="utf-8")
 
 
 @pytest.mark.ac("AC-09.11")
