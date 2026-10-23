@@ -434,3 +434,36 @@ class Person:
     display_name: str = ""
     name_key: str = ""
     email: str | None = None
+
+
+# ---------------------------------------------------------------------------------------------
+# Ambiguity surfacing models (T-M4-12; spec 10.2a rule 1, 10.4, FR-02.9, AC-05.11, AC-05.14)
+#
+#   ``OwnerDisplay(text, flags)``       how one owner is shown: ``flags`` is a tuple of list flags
+#                       (``OA`` owner ambiguous, ``OU`` owner unassigned/provisional).
+#   ``AmbiguousGroup(candidates, names, items)``   one candidate set of ``list --ambiguous``.
+#   ``AmbiguousRecord(item_id, location, raw, candidate_names)``   ingest-report hook row.
+# ---------------------------------------------------------------------------------------------
+FLAG_OWNER_AMBIGUOUS = "OA"
+FLAG_OWNER_UNASSIGNED = "OU"
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class OwnerDisplay:
+    text: str
+    flags: tuple[str, ...] = ()
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class AmbiguousGroup:
+    candidates: tuple[str, ...]
+    names: tuple[str, ...]
+    items: tuple[object, ...]
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class AmbiguousRecord:
+    item_id: int
+    location: str | None
+    raw: str | None
+    candidate_names: tuple[str, ...]
