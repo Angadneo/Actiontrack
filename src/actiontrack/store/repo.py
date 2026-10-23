@@ -63,7 +63,8 @@ no method commits and none deletes an ``item_source`` or ``item_link`` row, BR-0
                ``update_item_source(id, **fields)``, ``get_item_source(id)``,
                ``list_item_sources(item_id=None, source_file_id=None, present=None)``,
                ``set_source_owners(item_source_id, owners) -> bool``, ``list_source_owners(item_source_id)``,
-               ``list_all_source_owners()``
+               ``list_all_source_owners()``, ``list_source_context(item_id)`` (sources + meeting date + path),
+               ``item_ids_by_core_key(key)``, ``item_ids_by_owner_persons(ids)`` (matcher candidates)
     links:     ``insert_link(from_id, to_id, kind, reason=None, run_id=None) -> bool`` (possible_duplicate is
                stored once with from < to; completed_by keeps its direction; INSERT OR IGNORE),
                ``links_of(item_id)`` (both ends), ``list_links(kind=None)``
@@ -106,6 +107,7 @@ __all__ = [
     "ItemSourceRow",
     "MeetingRow",
     "Repo",
+    "SourceContextRow",
     "SourceFileRow",
     "canonical_json",
     "format_item_id",
@@ -328,6 +330,16 @@ class ItemSourceRow:
     due_confidence: str
     due_rule: str | None
     due_reason: str | None
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class SourceContextRow:
+    """An ``item_source`` row with the facts that order and match it (T-M5-08/22)."""
+
+    source: ItemSourceRow
+    meeting_date: _dt.date | None
+    rel_path: str
+    folder_root: str
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -1014,6 +1026,43 @@ class Repo:
             params.append(int(present))
         sql = "SELECT * FROM item_source" + (" WHERE " + " AND ".join(where) if where else "")
         return [self._source_row(r) for r in self.conn.execute(sql + " ORDER BY id", params).fetchall()]
+
+    def list_source_context(self, item_id: int) -> list[SourceContextRow]:
+        """All sources of an item (present or not, in id order) with meeting date and file path."""
+        rows = self.conn.execute(
+            "SELECT s.*, m.meeting_date AS _meeting_date, f.rel_path AS _rel_path, f.folder_root AS _folder_root "
+            "FROM item_source s JOIN source_file f ON f.id = s.source_file_id "
+            "LEFT JOIN meeting m ON m.id = s.meeting_id WHERE s.item_id = ? ORDER BY s.id",
+            (item_id,),
+        ).fetchall()
+        return [
+            SourceContextRow(self._source_row(r), _date(r["_meeting_date"]), r["_rel_path"], r["_folder_root"])
+            for r in rows
+        ]
+
+    def item_ids_by_core_key(self, core_key: str) -> list[int]:
+        """Ids (ascending) of items whose canonical core key or any source core key equals ``core_key``
+        (candidate lookup of 10.6; an empty key matches nothing)."""
+        if not core_key:
+            return []
+        rows = self.conn.execute(
+            "SELECT id FROM action_item WHERE description_core_key = ?1 "
+            "UNION SELECT item_id FROM item_source WHERE core_key = ?1 ORDER BY 1",
+            (core_key,),
+        ).fetchall()
+        return [r[0] for r in rows]
+
+    def item_ids_by_owner_persons(self, person_ids: Iterable[str]) -> list[int]:
+        """Ids (ascending) of items with an ``item_owner`` row for any of ``person_ids`` (fuzzy candidate
+        bucket of 10.6; the caller filters for the exact person set)."""
+        ids = sorted(set(person_ids))
+        if not ids:
+            return []
+        marks = ",".join("?" * len(ids))
+        rows = self.conn.execute(
+            f"SELECT DISTINCT item_id FROM item_owner WHERE person_id IN ({marks}) ORDER BY item_id", ids
+        ).fetchall()
+        return [r[0] for r in rows]
 
     # ----------------------------------------------------------- item_link (never deleted)
     def insert_link(

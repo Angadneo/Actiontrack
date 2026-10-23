@@ -126,7 +126,7 @@ def test_3_readable_1_empty_1_binary_twice_exit_5_both_times(tmp_db_path, folder
 @pytest.mark.ac("AC-01.8")
 def test_binary_among_good_files_is_isolated(tmp_db_path, folder):
     for i in range(1, 6):
-        write_note(folder, f"2026-09-0{i}-n.md", simple_note(f"2026-09-0{i}", f"N{i}"))
+        write_note(folder, f"2026-09-0{i}-n.md", simple_note(f"2026-09-0{i}", f"N{i}", (f"- [ ] Rahul Mehta to book room {i}",)))
     (folder / "scratch.md").write_bytes(BINARY)
     res = ingest(tmp_db_path, folder)
     assert res.counters.files_ingested == 5 and res.counters.files_failed == 1

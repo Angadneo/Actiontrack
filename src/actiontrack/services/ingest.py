@@ -10,7 +10,7 @@ Sections
 2. Run lifecycle, lock, interrupted runs (T-M5-04)            -- implemented
 3. Per-file transaction engine / report counters (T-M5-05)     -- implemented
 4. Persisting a new file (T-M5-07)                             -- implemented
-5. Matching integration, changed files, missing files (T-M5-08..13) -- later
+5. Matching integration (T-M5-08/09/22) -- implemented; changed files, missing files (T-M5-10..13) -- later
 6. Whole-database passes and finalisation (T-M5-14); interim driver ``run_ingest`` -- later / interim
 
 Section 1 public API (T-M5-03; spec FR-01.1, AC-01.1, 10.7.1, 10.7.5, BR-18, NFR-DET-01)
@@ -90,6 +90,12 @@ Section 4 public API (T-M5-07; spec 7.2, 10.1, 10.3, BR-04, BR-10, FR-01.12)
                                     ways to attach a source; ``resolve_item_owners(item, ctx, registry, cfg)``.
 ``FileCtx``, ``NewSource``, ``MatchResult``  the seam's data types.
 
+Section 5 public API (T-M5-08/09/22; spec 10.6, 10.6.1): ``match_or_create`` now does Tier-1b hook (``try_tier1b``,
+T-M5-10 extension point, returns None) -> Tier-1 merge (``merge_source(env, item_id, src)``) -> else new item +
+``possible_duplicate`` links (``MatchResult.links`` = ``(other_item_id, reason)`` pairs, ``possible_duplicates`` their
+count). ``recompute_canonical(repo, item_id, run_id)`` re-derives description/due/owners from the sources (call it after
+any source change); ``load_source_views(repo, item_id)``.
+
 Section 6 (interim) ``run_ingest(db_path, folder, *, cfg, run_ctx, recursive=True, dry_run=False,
 fault_hook=None, match=None, reingest=None) -> IngestResult``  discover -> session -> registry -> parse all ->
 plan -> ``process_plan`` -> finish. ``IngestResult.exit_code`` is 5 when a file failed, else 0.
@@ -110,7 +116,16 @@ from actiontrack import codes
 from actiontrack.clock import Clock, RunContext
 from actiontrack.config import Config
 from actiontrack.domain.dates import DueResult
-from actiontrack.domain.matching import core_key
+from actiontrack.domain.canonical import OwnerView, SourceView, select_canonical
+from actiontrack.domain.matching import (
+    ItemView,
+    NewView,
+    all_resolved,
+    classify_pair,
+    core_key,
+    owner_person_set,
+    pick_tier1,
+)
 from actiontrack.domain.models import (
     OwnerRole,
     OwnerStatus,
@@ -712,6 +727,8 @@ class MatchResult:
     source_id: int
     outcome: str  # "new" | "merged"
     possible_duplicates: int = 0
+    #: the possible_duplicate links this call created as ``(other_item_id, reason)`` (T-M5-09)
+    links: tuple[tuple[int, str], ...] = ()
 
 
 def _s(value: object) -> str | None:
@@ -805,9 +822,192 @@ def create_item(env: IngestEnv, src: NewSource) -> MatchResult:
     return MatchResult(item_id, source_id, "new")
 
 
+# --------------------------------------------------------------------------- matching (T-M5-08/09/22)
+#
+# ``match_or_create`` order of play for one parsed item (document order, inside the file transaction):
+#   0. EXTENSION POINT ``try_tier1b`` (T-M5-10): a dateless/differently-dated ``[x]`` source that completes
+#      earlier open copies runs BEFORE Tier-1 and may return a ``MatchResult``. Until it lands it returns
+#      None, so a done source is handled by Tier-1 only (10.6.1 row 5: existing open + new done with the same
+#      due or both undated) and otherwise falls to the ``possible_duplicate`` links below.
+#   1. candidates = items sharing the ``core_key`` (index lookup, not a scan), ascending id.
+#   2. Tier-1 (all six conditions, ``domain.matching.pick_tier1``): the lowest-id compatible candidate gets the
+#      source (``merge_source``): ``source_added`` + ``merged`` events, status effect of 10.6.1 row 5, then
+#      ``recompute_canonical`` (T-M5-22). A merge creates no new links (pair links between items exist already
+#      from when the second of the two was created, and they are never altered).
+#   3. otherwise a NEW item, plus one ``possible_duplicate`` link per candidate pair that has a reason
+#      (``classify_pair``: G-27 precedence) and per fuzzy candidate (same resolved owner set, Jaccard >=
+#      ``limits.fuzzy_threshold``, found through the owner person bucket). Links never change items.
+
+
+def _owner_view(o: object) -> OwnerView:
+    return OwnerView(
+        getattr(o, "owner_raw", None),
+        _s(getattr(o, "role", "owner")) or "owner",
+        getattr(o, "person_id", None),
+        _s(getattr(o, "status", None) or getattr(o, "owner_status", None)) or "unassigned",
+        _s(getattr(o, "provenance", None)) or "none",
+        tuple(getattr(o, "candidates", ()) or ()),
+    )
+
+
+def load_source_views(repo: Repo, item_id: int) -> list[SourceView]:
+    """The item's sources (present or not) as pure ``SourceView`` data, in source-id order."""
+    out: list[SourceView] = []
+    for c in repo.list_source_context(item_id):
+        s = c.source
+        out.append(
+            SourceView(
+                source_id=s.id,
+                rel_path=c.rel_path,
+                line_start=s.line_start,
+                meeting_date=c.meeting_date,
+                source_file_id=s.source_file_id,
+                present=s.present,
+                description=s.description or "",
+                task_text=s.task_text or "",
+                core_key=s.core_key or "",
+                checkbox_state=s.checkbox_state,
+                due_raw=s.due_raw,
+                due_raw_other=s.due_raw_other,
+                due_date=s.due_date,
+                due_confidence=s.due_confidence,
+                due_rule=s.due_rule,
+                due_reason=s.due_reason,
+                owners=tuple(_owner_view(o) for o in repo.list_source_owners(s.id)),
+            )
+        )
+    return out
+
+
+def recompute_canonical(repo: Repo, item_id: int, run_id: int | None) -> dict[str, tuple[object, object]]:
+    """Re-derive an item's canonical description / task text / core key / due / owners from its sources
+    (``domain.canonical.select_canonical``) and write them through ``touch_item`` (T-M5-22).
+
+    ``updated_at`` moves only when something changed; events: ``updated_from_source`` (description / due) and
+    ``owner_changed`` (owners, before/after). ``status`` is never written here (module docstring of
+    ``canonical``). Owner ``candidates`` (not stored per source) are carried over from the current item rows
+    when the phrase is unchanged. Returns what changed (idempotent: a second call returns ``{}``)."""
+    views = load_source_views(repo, item_id)
+    if not views:
+        return {}
+    sel = select_canonical(views)
+    current = repo.list_item_owners(item_id)
+
+    def carry(o: OwnerView) -> OwnerView:
+        for row in current:
+            if (row.owner_raw, row.role, row.person_id, row.owner_status) == (
+                o.owner_raw,
+                o.role,
+                o.person_id,
+                o.status,
+            ):
+                return OwnerView(o.owner_raw, o.role, o.person_id, o.status, o.provenance, row.candidates)
+        return o
+
+    changed = dict(repo.touch_item(item_id, sel.item_columns(), event_kind="updated_from_source", run_id=run_id))
+    changed.update(
+        repo.touch_item(
+            item_id, None, owners=tuple(carry(o) for o in sel.owners), event_kind="owner_changed", run_id=run_id
+        )
+    )
+    return changed
+
+
+def _load_item_view(repo: Repo, item_id: int) -> ItemView:
+    row = repo.get_action_item(item_id)
+    assert row is not None, f"candidate item {item_id} vanished"
+    return ItemView(
+        item_id,
+        tuple(row.description_core_key.split()),
+        row.status,
+        tuple(_owner_view(o) for o in repo.list_item_owners(item_id)),
+        tuple(load_source_views(repo, item_id)),
+        row.due_date,
+        row.due_confidence,
+    )
+
+
+def _new_view(src: NewSource) -> NewView:
+    cols = _due_columns(src.due)
+    return NewView(
+        src.file.source_file_id,
+        src.file.meeting_date,
+        src.core_tokens,
+        tuple(_owner_view(o) for o in src.owners),
+        cols.get("due_date"),  # type: ignore[arg-type]
+        str(cols["due_confidence"]),
+        "done" if src.item.checkbox_state == "done" else "open",
+    )
+
+
+def try_tier1b(env: IngestEnv, src: NewSource) -> MatchResult | None:
+    """EXTENSION POINT for T-M5-10 (Tier-1b completion match). Runs before Tier-1; returns a ``MatchResult``
+    when it handled the source, else None. Not implemented yet: always None."""
+    return None
+
+
+def merge_source(env: IngestEnv, item_id: int, src: NewSource) -> MatchResult:
+    """Tier-1 merge effect (10.6.1): attach the source, ``source_added`` + ``merged`` events, existing open +
+    new ``[x]`` -> done (origin ``note``, ``completed_at`` NULL, evidence = the new source, ``status_changed``),
+    then ``recompute_canonical``. No source row is ever deleted or rewritten (BR-08)."""
+    repo, f, it = env.repo, src.file, src.item
+    prior = repo.get_action_item(item_id)
+    assert prior is not None
+    source_id = add_source(env, item_id, src)
+    where = f"{f.rel_path}:{it.line_start}"
+    repo.record_event(item_id, "source_added", None, {"source": where, "source_id": source_id}, env.run_id)
+    repo.record_event(item_id, "merged", None, {"source": where, "source_id": source_id, "tier": "1"}, env.run_id)
+    if prior.status == "open" and it.checkbox_state == "done":
+        repo.touch_item(
+            item_id,
+            {
+                "status": "done",
+                "completion_origin": "note",
+                "completed_at": None,
+                "completion_evidence_source_id": source_id,
+            },
+        )
+        repo.record_event(
+            item_id,
+            "status_changed",
+            {"status": "open"},
+            {"status": "done", "completion_origin": "note", "evidence": where, "raw_text": it.raw_text},
+            env.run_id,
+        )
+    recompute_canonical(repo, item_id, env.run_id)
+    return MatchResult(item_id, source_id, "merged")
+
+
 def match_or_create(env: IngestEnv, src: NewSource) -> MatchResult:
-    """The matcher seam (see the section comment). Matching is not implemented yet: always creates."""
-    return create_item(env, src)
+    """The matcher seam: Tier-1b hook, Tier-1 merge, else a new item plus possible_duplicate links
+    (see the comment block above for the order of play)."""
+    handled = try_tier1b(env, src)
+    if handled is not None:
+        return handled
+    repo, lim = env.repo, env.cfg.limits
+    new = _new_view(src)
+    candidate_ids = repo.item_ids_by_core_key(src.core_key) if src.core_tokens else []
+    candidates = [_load_item_view(repo, i) for i in candidate_ids]
+    target = pick_tier1(new, candidates, window_days=lim.dup_window_days)
+    if target is not None:
+        return merge_source(env, target.item_id, src)
+    result = create_item(env, src)
+    pool = list(candidates)
+    if src.core_tokens and all_resolved(new.owners):
+        seen = set(candidate_ids)
+        pool += [
+            _load_item_view(repo, i)
+            for i in repo.item_ids_by_owner_persons(owner_person_set(new.owners))
+            if i not in seen and i != result.item_id
+        ]
+    links: list[tuple[int, str]] = []
+    for other in sorted(pool, key=lambda v: v.item_id):
+        reason = classify_pair(new, other, window_days=lim.dup_window_days, fuzzy_threshold=lim.fuzzy_threshold)
+        if reason is not None and repo.insert_link(
+            result.item_id, other.item_id, "possible_duplicate", str(reason.value), env.run_id
+        ):
+            links.append((other.item_id, str(reason.value)))
+    return MatchResult(result.item_id, result.source_id, "new", len(links), tuple(links))
 
 
 def persist_new_file(env: IngestEnv, entry: PlanEntry, ordinal: int) -> FileWrite:

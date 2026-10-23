@@ -327,7 +327,7 @@ def test_failed_item_write_rolls_the_whole_file_back_including_people(tmp_db_pat
 @pytest.mark.sc("SC-25")
 def test_full_sample_persists_117_items_and_second_run_changes_nothing(tmp_db_path, copy_fixture_notes):
     folder = copy_fixture_notes()
-    res = ingest(tmp_db_path, folder)
+    res = ingest(tmp_db_path, folder, match=ing.create_item)  # persistence only: matching (T-M5-08/09) is tested elsewhere
     c = res.counters
     assert (c.files_discovered, c.files_ingested, c.files_empty, c.files_failed, c.files_unchanged) == (35, 33, 1, 1, 0)
     assert res.exit_code == 5 and res.run_row.status == "partial"
@@ -364,7 +364,7 @@ def test_full_sample_persists_117_items_and_second_run_changes_nothing(tmp_db_pa
         before = dump_tables(conn)
     finally:
         conn.close()
-    second = ingest(tmp_db_path, folder)
+    second = ingest(tmp_db_path, folder, match=ing.create_item)
     c2 = second.counters
     assert (c2.files_discovered, c2.files_unchanged, c2.files_empty, c2.files_failed, c2.files_ingested) == (35, 33, 1, 1, 0)
     assert (c2.items_new, c2.items_merged, c2.items_updated) == (0, 0, 0)
